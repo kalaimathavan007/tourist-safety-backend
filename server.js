@@ -19,6 +19,12 @@ const io = socketIo(server, {
 app.use(cors());
 app.use(express.json());
 
+// 👇 நீங்க சேர்க்க வேண்டிய கோடு இதோ!
+app.get('/', (req, res) => {
+    res.send("Tourist Safety Backend is running successfully!");
+});
+// 👆 
+
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/alerts', require('./routes/alerts'));
