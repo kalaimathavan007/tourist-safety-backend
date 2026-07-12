@@ -9,9 +9,11 @@ dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
+
+// CORS Syntax Error fixed here
 const io = socketIo(server, {
     cors: {
-        origin: "http://localhost:3000",
+        origin: "*",
         methods: ["GET", "POST"]
     }
 });
@@ -19,12 +21,12 @@ const io = socketIo(server, {
 app.use(cors());
 app.use(express.json());
 
-// Base route to prevent 404 error
+// Base route 
 app.get('/', (req, res) => {
     res.send("Tourist Safety Backend is running successfully! 🚀");
 });
 
-// Routes
+// Routes - Ensure these files exist in your routes folder
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/alerts', require('./routes/alerts'));
 app.use('/api/zones', require('./routes/zones'));
@@ -34,9 +36,9 @@ app.use('/api/notify', require('./routes/notify'));
 app.use('/api/efir', require('./routes/efir'));
 app.use('/api/blockchain', require('./routes/blockchain'));
 app.use('/api/identity', require('./routes/identity'));
-app.use('/api/admin', require('./routes/admin')); // Admin OTP and user listing
+app.use('/api/admin', require('./routes/admin'));
 
-// Socket.io for real-time location sharing
+// Socket.io
 io.on('connection', (socket) => {
     console.log('New client connected');
     socket.on('sendLocation', (data) => {
