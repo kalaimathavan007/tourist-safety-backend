@@ -1,90 +1,135 @@
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const crypto = require('crypto');
-const nodemailer = require('nodemailer');
+const bcrypt = require('bcryptjs'); // Password-a encrypt panna
+const jwt = require('jsonwebtoken'); // Security token generate panna
+const nodemailer = require('nodemailer'); // Email anuppa
+const User = require('../models/User'); // Unga User Database Model
 
-// simple in-memory OTP store (demo)
-const otpStore = new Map();
+// OTP-kalai temporary-aaga save panna oru object (Memory store)
+const otpStore = {};
 
+// Email anuppurathukkana Setup (Gmail)
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
-});
-
-router.post('/register', async(req, res) => {
-    try {
-        const { name, email, password, role, phone } = req.body;
-        let user = await User.findOne({ email });
-        if (user) return res.status(400).json({ msg: 'User already exists' });
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-        user = new User({ name, email, password: hashedPassword, role: role || 'tourist', phone });
-        await user.save();
-        const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
-        res.json({ token, user: { id: user.id, name, email, role: user.role } });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Server error');
+        user: process.env.EMAIL_USER, // Unga Gmail address (e.g., 'yourmail@gmail.com')
+        pass: process.env.EMAIL_PASS // Gmail App Password
     }
 });
 
-router.post('/login', async(req, res) => {
+// -------------------------------------------------------------
+// 1. SEND OTP FOR LOGIN (Erkanave irukkura user-ku)
+// -------------------------------------------------------------
+router.post('/send-otp', async(req, res) => {
+    const { email, password } = req.body;
     try {
-        const { email, password } = req.body;
         const user = await User.findOne({ email });
-        if (!user) return res.status(400).json({ msg: 'Invalid credentials' });
+        if (!user) return res.status(400).json({ msg: 'User not found. Please register first.' });
+
+        // Password check pandrom
         const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(400).json({ msg: 'Invalid credentials' });
-        const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
-        res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+        if (!isMatch) return res.status(400).json({ msg: 'Invalid password.' });
+
+        // 6-digit OTP create pandrom
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+        // OTP-ai memory-la save pandrom (Valid for 5 mins)
+        otpStore[email] = { otp, expires: Date.now() + 300000, type: 'login' };
+
+        // Email anuppurom
+        await transporter.sendMail({
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: 'Tourist Safety System - Login OTP',
+            text: `Welcome back! Your secure login OTP is: ${otp}. It is valid for 5 minutes.`
+        });
+
+        res.json({ success: true, msg: 'OTP sent to your email successfully.' });
     } catch (err) {
-        console.error(err);
-        res.status(500).send('Server error');
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
+// -------------------------------------------------------------
+// 2. SEND OTP FOR REGISTRATION (Pudhusa account create panna)
+// -------------------------------------------------------------
+router.post('/register-send-otp', async(req, res) => {
+    const { name, email, password, phone, role } = req.body;
+    try {
+        let user = await User.findOne({ email });
+        if (user) return res.status(400).json({ msg: 'User already exists. Please login.' });
+
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+        // Database-la save pandrathuku munnadi password-a hash pandrom
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // OTP & User details-ai memory-la save pandrom (Verify aana aprm thaan DB-la pogum)
+        otpStore[email] = {
+            otp,
+            expires: Date.now() + 300000,
+            type: 'register',
+            userData: { name, email, password: hashedPassword, phone, role }
+        };
+
+        // Email anuppurom
+        await transporter.sendMail({
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: 'Tourist Safety System - Registration OTP',
+            text: `Hi ${name}, Your OTP to register an account is: ${otp}. It is valid for 5 minutes.`
+        });
+
+        res.json({ success: true, msg: 'OTP sent to your email successfully.' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
+// -------------------------------------------------------------
+// 3. VERIFY OTP (Login & Register rendukkum idhu thaan)
+// -------------------------------------------------------------
+router.post('/verify-otp', async(req, res) => {
+    const { email, otp } = req.body;
+    try {
+        const record = otpStore[email];
+
+        // Check 1: OTP irukka? Match aagutha? Expire aagalaye?
+        if (!record || record.otp !== otp || Date.now() > record.expires) {
+            return res.status(400).json({ msg: 'Invalid or Expired OTP' });
+        }
+
+        let user;
+
+        // Register flow-a iruntha pudhusa Database-la save pandrom
+        if (record.type === 'register') {
+            user = new User(record.userData);
+            await user.save();
+        }
+        // Login flow-a iruntha Database-la irunthu user-a edukurom
+        else {
+            user = await User.findOne({ email });
+        }
+
+        // Login aana piragu Token tharrom
+        const token = jwt.sign({ id: user._id, role: user.role },
+            process.env.JWT_SECRET || 'supersecretkey', { expiresIn: '1d' }
+        );
+
+        // OTP verify aanathum atha delete pannidrom
+        delete otpStore[email];
+
+        res.json({
+            token,
+            user: { id: user._id, name: user.name, email: user.email, role: user.role }
+        });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
 module.exports = router;
-
-// POST /api/auth/send-otp and /api/auth/verify-otp
-router.post('/send-otp', async(req, res) => {
-    const { email } = req.body;
-    if (!email) return res.status(400).json({ error: 'Email required' });
-    const otp = crypto.randomInt(100000, 999999).toString();
-    otpStore.set(email, { otp, expires: Date.now() + 5 * 60 * 1000 });
-    try {
-        await transporter.sendMail({
-            from: process.env.EMAIL_USER,
-            to: email,
-            subject: 'Your login OTP',
-            text: `Your OTP is ${otp}. It is valid for 5 minutes.`,
-        });
-        return res.json({ success: true });
-    } catch (err) {
-        console.error('send-otp error', err);
-        return res.status(500).json({ error: 'Failed to send OTP' });
-    }
-});
-
-router.post('/verify-otp', async(req, res) => {
-    const { email, otp } = req.body;
-    if (!email || !otp) return res.status(400).json({ error: 'Email and OTP required' });
-    const rec = otpStore.get(email);
-    if (!rec || rec.otp !== otp || rec.expires < Date.now()) {
-        return res.status(401).json({ error: 'Invalid or expired OTP' });
-    }
-    otpStore.delete(email);
-    let user = await User.findOne({ email });
-    if (!user) {
-        // create a new tourist account for OTP login
-        user = new User({ name: email.split('@')[0], email, password: 'otp-only', role: 'tourist' });
-        await user.save();
-    }
-    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
-});

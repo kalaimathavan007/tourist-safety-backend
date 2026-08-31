@@ -8,10 +8,18 @@ const originalLength = content.length;
 
 // Apply systematic regex replacements in order
 const fixes = [
+    // Repair tag names split across a line break, such as '</h' followed by '3>'.
+    [/<\s*\/\s*(\w+)\s*\r?\n\s*(\w+)\s*>/g, '</$1$2>'],
+    // Join JSX delimiters that were split onto their own lines.
+    [/<\s*\r?\n\s*/g, '<'],
+    // Fix closing tags with inconsistent spacing: '< /tag>' => '</tag>'.
+    [/<\s*\/\s*(\w+)\s*>/g, '</$1>'],
     // Fix closing tags: '< /tagname >' => '</tagname>'
     [/< \/(\w+) >/g, '</$1>'],
     // Fix opening tags: '< tagname' => '<tagname'
     [/< (\w+)/g, '<$1'],
+    // Fix opening tags with multiple spaces after '<'.
+    [/<\s+(\w+)/g, '<$1'],
     // Fix closing angle brackets: 'tagname >' => 'tagname>'
     [/(\w+) >/g, '$1>'],
     // Fix self-closing tags with space: '/ >' => '/>'
