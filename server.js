@@ -4,6 +4,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const http = require('http');
 const socketIo = require('socket.io');
+const path = require('path');
 
 dotenv.config();
 
@@ -12,7 +13,7 @@ const server = http.createServer(app);
 
 // 1. CORS Configuration (Express & Socket.io rendukkum)
 const corsOptions = {
-    origin: "*", // Development-ku all origins allow pandrom
+    origin: "*", // Development/Cloud-ku all origins allow pandrom
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
 };
@@ -27,7 +28,7 @@ const io = socketIo(server, {
 });
 
 // 3. Base Health Check Route
-app.get('/', (req, res) => {
+app.get('/api/health', (req, res) => {
     res.send("Tourist Safety Backend is running successfully! 🚀");
 });
 
@@ -48,9 +49,7 @@ app.use('/api/history', require('./routes/history'));
 io.on('connection', (socket) => {
     console.log(`📡 New client connected: ${socket.id}`);
 
-    // Tourist continuous live coordinates anuppum pothu receive pannum
     socket.on('sendLocation', (data) => {
-        // Admin dashboard matrum matha clients-ku broadcast seiyum
         socket.broadcast.emit('receiveLocation', data);
     });
 
@@ -59,9 +58,13 @@ io.on('connection', (socket) => {
     });
 });
 
-// 6. 404 Route Not Found Handler (API routes-ku mattum)
-app.use((req, res, next) => {
-    res.status(404).json({ message: "Route not found! Check your API endpoint path." });
+// 6. Serve React Frontend Static Files (Google Cloud Single Server Setup)
+// React build folder-a backend-oda 'public' folder-ku copy panrom
+app.use(express.static(path.join(__dirname, 'public')));
+
+// React router support-ku ella unknown routes-um index.html-ku redirect aagum
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // 7. Global Error Handler Middleware
@@ -72,12 +75,19 @@ app.use((err, req, res, next) => {
 
 // 8. MongoDB Connection & Server Start
 const PORT = process.env.PORT || 5000;
+const mongoURI = process.env.MONGODB_URI;
 
-mongoose.connect(process.env.MONGODB_URI)
-    .then(() => {
-        console.log('✅ MongoDB connected successfully');
-        server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
-    })
-    .catch(err => {
-        console.error('❌ MongoDB connection error:', err);
-    });
+if (!mongoURI) {
+    console.error('❌ MONGODB_URI is missing in .env. Please add your MongoDB connection string.');
+    server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT} without database connection.`));
+} else {
+    mongoose.connect(mongoURI)
+        .then(() => {
+            console.log('✅ MongoDB connected successfully');
+            server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+        })
+        .catch(err => {
+            console.error('❌ MongoDB connection error:', err.message);
+            server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT} without database connection.`));
+        });
+}

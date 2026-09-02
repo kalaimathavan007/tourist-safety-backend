@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-09-02T15:34:08.736214800+00:00",
+  "entries": [
+    {
+      "id": "30c61266-4ab3-4276-a900-2921c8ad3779",
+      "file_name": "30c61266-4ab3-4276-a900-2921c8ad3779/30c61266-4ab3-4276-a900-2921c8ad3779.json",
+      "source": {
+        "kind": "normal"
+      },
+      "created_at": "2026-09-02T15:34:08.459843700+00:00",
+      "updated_at": "2026-09-02T15:34:08.511630500+00:00",
+      "title": "New Chat",
+      "model": "",
+      "mode": "agent",
+      "message_count": 0,
+      "root_chat_id": "30c61266-4ab3-4276-a900-2921c8ad3779",
+      "is_title_generated": false,
+      "total_lines_added": 0,
+      "total_lines_removed": 0,
+      "tasks_total": 0,
+      "tasks_done": 0,
+      "tasks_failed": 0,
+      "total_prompt_tokens": 0,
+      "total_completion_tokens": 0,
+      "total_tokens": 0,
+      "total_cache_read_tokens": 0,
+      "total_cache_creation_tokens": 0,
+      "displayable_chat": true,
+      "waiting_for_card_ids": [],
+      "file_len": 649,
+      "file_modified_unix_ms": 1788363248514
+    }
+  ],
+  "skipped_files": []
+}

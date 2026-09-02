@@ -6,7 +6,7 @@ import io from 'socket.io-client';
 import 'leaflet/dist/leaflet.css';
 import './App.css';
 
-const BACKEND_URL = 'http://localhost:5000';
+const BACKEND_URL = 'https://tourist-safety-backend-hzpg.onrender.com';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -15,7 +15,7 @@ L.Icon.Default.mergeOptions({
     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-// --- 100% Mobile Responsive Styles ---
+// --- 100% Mobile Responsive Styles & Splash Animations ---
 const globalStyles = `
   * { box-sizing: border-box; }
   body, html { margin: 0; padding: 0; width: 100%; overflow-x: hidden; }
@@ -27,6 +27,36 @@ const globalStyles = `
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     width: 100%;
     overflow-x: hidden;
+  }
+
+  /* --- Splash Screen Styles --- */
+  .splash-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(circle, #1a2a40 0%, #0a1118 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 99999;
+  }
+  .splash-logo {
+    width: 160px;
+    height: 160px;
+    border-radius: 20px;
+    animation: splashPop 2s ease-in-out infinite alternate;
+    box-shadow: 0 0 35px rgba(0, 195, 255, 0.4);
+  }
+  .splash-text {
+    color: #ffffff;
+    font-size: 1.5rem;
+    font-weight: bold;
+    letter-spacing: 3px;
+    margin-top: 20px;
+    animation: textFade 1.5s ease-in-out;
   }
 
   .glass-navbar { 
@@ -43,7 +73,7 @@ const globalStyles = `
     width: 100%;
   }
 
-  .navbar-brand { font-size: 1.25rem; font-weight: bold; margin: 0; }
+  .navbar-brand { font-size: 1.2rem; font-weight: bold; margin: 0; letter-spacing: 1px; }
   .navbar-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
   .fade-in { animation: fadeIn 0.8s ease-out forwards; opacity: 0; }
@@ -169,6 +199,14 @@ const globalStyles = `
     }
   }
 
+  @keyframes splashPop {
+    0% { transform: scale(0.85); filter: drop-shadow(0 0 15px rgba(0,195,255,0.3)); }
+    100% { transform: scale(1.05); filter: drop-shadow(0 0 30px rgba(0,195,255,0.8)); }
+  }
+  @keyframes textFade {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 65, 108, 0.6); } 70% { box-shadow: 0 0 0 12px rgba(255, 65, 108, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 65, 108, 0); } }
 `;
@@ -228,6 +266,23 @@ const GLOBAL_DANGER_ZONES = [{
         ]
     }
 ];
+
+// ------------------- Splash Screen Component -------------------
+function SplashScreen() {
+    return ( <
+        div className = "splash-container" >
+        <
+        img src = "/logo.png"
+        alt = "Journey Guard Logo"
+        className = "splash-logo" / >
+        <
+        div className = "splash-text" > JOURNEY GUARD < /div> <
+        p style = {
+            { color: '#4facfe', fontSize: '0.9rem', marginTop: '8px' }
+        } > Smart Tourist Safety System < /p> < /
+        div >
+    );
+}
 
 // ------------------- Tourist Auth (Email OTP) -------------------
 function TouristAuth({ onLogin }) {
@@ -301,11 +356,17 @@ function TouristAuth({ onLogin }) {
         <
         div className = "auth-card-styled fade-in" >
         <
+        img src = "/logo.png"
+        alt = "Journey Guard"
+        style = {
+            { width: '60px', height: '60px', marginBottom: '10px' }
+        }
+        /> <
         h2 style = {
             { color: '#1e3c72', marginBottom: '15px', fontSize: '1.4rem' }
-        } > 🌍Smart Tourist Safety < /h2> <
+        } > Journey Guard < /h2> <
         h3 style = {
-            { color: '#555', fontSize: '1.1rem', marginBottom: '15px' }
+            { color: '#555', fontSize: '1.05rem', marginBottom: '15px' }
         } > { step === 'otp' ? 'Enter Gmail OTP' : isLogin ? 'Tourist Login' : 'Create an Account' } <
         /h3>
 
@@ -462,6 +523,12 @@ function AdminAuth({ onAdminLogin }) {
             <
             div className = "auth-card-styled fade-in" >
             <
+            img src = "/logo.png"
+            alt = "Journey Guard"
+            style = {
+                { width: '60px', height: '60px', marginBottom: '10px' }
+            }
+            /> <
             h2 style = {
                 { color: '#1e3c72', marginBottom: '15px', fontSize: '1.4rem' }
             } > 🔐Admin Panel < /h2> {
@@ -522,7 +589,7 @@ function AdminAuth({ onAdminLogin }) {
 );
 }
 
-// ------------------- Tourist Dashboard (Live Location via Socket.io) -------------------
+// ------------------- Tourist Dashboard -------------------
 function TouristDashboard({ user, logout }) {
     const token = localStorage.getItem('token');
     const [currentLocation, setCurrentLocation] = useState(null);
@@ -537,13 +604,13 @@ function TouristDashboard({ user, logout }) {
     const [blockchainHash, setBlockchainHash] = useState('');
     const [identity, setIdentity] = useState(null);
 
-    // Initial Zones Fetch
+    // Initial Zones Fetch with Array Check
     useEffect(() => {
         fetch(`${BACKEND_URL}/api/zones`)
             .then(res => res.json())
             .then(backendZones => {
-                const allZones = [...backendZones, ...GLOBAL_DANGER_ZONES];
-                setZones(allZones);
+                const validZones = Array.isArray(backendZones) ? backendZones : [];
+                setZones([...validZones, ...GLOBAL_DANGER_ZONES]);
             })
             .catch(err => {
                 console.error("Backend fetch error, loading default zones...", err);
@@ -551,7 +618,7 @@ function TouristDashboard({ user, logout }) {
             });
     }, []);
 
-    // Live Geolocation Tracking & Socket.io Broadcast
+    // Live Geolocation Tracking with Socket.io
     useEffect(() => {
         if (!navigator.geolocation) return;
 
@@ -566,7 +633,7 @@ function TouristDashboard({ user, logout }) {
                     lng: pos.coords.longitude
                 };
                 setCurrentLocation({ lat: coords.lat, lng: coords.lng });
-                socket.emit('sendLocation', coords); // Broadcast live location
+                socket.emit('sendLocation', coords);
             },
             (err) => console.log('Location watch error:', err), { enableHighAccuracy: true, maximumAge: 5000 }
         );
@@ -608,7 +675,7 @@ function TouristDashboard({ user, logout }) {
     }, [currentLocation]);
 
     useEffect(() => {
-        if (!currentLocation) return;
+        if (!currentLocation || !Array.isArray(zones)) return;
         zones.forEach(zone => {
             if (isPointInZone(currentLocation, zone.coordinates)) {
                 const key = zone._id;
@@ -625,11 +692,15 @@ function TouristDashboard({ user, logout }) {
         });
     }, [currentLocation, zones, lastAlertShown, token]);
 
+    // Fetch Alerts with Array Safety Protection
     const fetchAlerts = async() => {
         try {
             const res = await fetch(`${BACKEND_URL}/api/alerts/my`, { headers: { 'x-auth-token': token } });
-            setAlerts(await res.json());
-        } catch {}
+            const data = await res.json();
+            setAlerts(Array.isArray(data) ? data : []);
+        } catch {
+            setAlerts([]);
+        }
     };
     useEffect(() => { fetchAlerts(); }, []);
 
@@ -751,7 +822,18 @@ function TouristDashboard({ user, logout }) {
             <
             nav className = "glass-navbar fade-in" >
             <
-            h1 className = "navbar-brand" > 🚨Tourist Safety < /h1> <
+            div style = {
+                { display: 'flex', alignItems: 'center', gap: '10px' }
+            } >
+            <
+            img src = "/logo.png"
+            alt = "Logo"
+            style = {
+                { width: '34px', height: '34px', borderRadius: '6px' }
+            }
+            /> <
+            h1 className = "navbar-brand" > JOURNEY GUARD < /h1> < /
+            div > <
             div className = "navbar-controls" >
             <
             select className = "modern-input"
@@ -781,8 +863,7 @@ function TouristDashboard({ user, logout }) {
             div style = {
                 { maxWidth: '1200px', margin: '0 auto', padding: '0 12px', display: 'flex', flexWrap: 'wrap', gap: '15px' }
             } >
-
-            { /* Left Column (Map & AI) */ } <
+            <
             div style = {
                 { flex: '1 1 500px', minWidth: '0', maxWidth: '100%' }
             }
@@ -807,7 +888,7 @@ function TouristDashboard({ user, logout }) {
                     Marker >
                 )
             } {
-                zones.map((zone) => ( <
+                Array.isArray(zones) && zones.map((zone) => ( <
                     Polygon key = { zone._id }
                     positions = { zone.coordinates }
                     color = { zone.level === 'danger' ? '#ff416c' : '#ffb347' }
@@ -878,7 +959,7 @@ function TouristDashboard({ user, logout }) {
             /div> < /
             div >
 
-            { /* Right Column (Emergency, Alerts & Blockchain) */ } <
+            <
             div style = {
                 { flex: '1 1 320px', minWidth: '0', maxWidth: '100%' }
             }
@@ -951,7 +1032,7 @@ function TouristDashboard({ user, logout }) {
             />
 
             {
-                alerts.length === 0 ? ( <
+                !Array.isArray(alerts) || alerts.length === 0 ? ( <
                     p style = {
                         { color: '#888', fontSize: '0.9rem', margin: '5px 0' }
                     } > No active alerts.You are safe! < /p>
@@ -965,7 +1046,7 @@ function TouristDashboard({ user, logout }) {
                             <
                             strong style = {
                                 { color: '#d32f2f' }
-                            } > { alert.type.toUpperCase() } < /strong> - {alert.message} <
+                            } > { alert.type ? alert.type.toUpperCase() : 'ALERT' } < /strong> - {alert.message} <
                             br / > < small > 📍{ alert.location ? `${alert.location.lat.toFixed(4)}, ${alert.location.lng.toFixed(4)}` : 'N/A' } < /small> <
                             br / > < small style = {
                                 { color: '#666' }
@@ -1029,7 +1110,7 @@ function TouristDashboard({ user, logout }) {
 );
 }
 
-// ------------------- Admin Dashboard (Socket.io Real-time Tracker) -------------------
+// ------------------- Admin Dashboard -------------------
 function AdminDashboard({ user, logout }) {
     const token = localStorage.getItem('token');
     const [users, setUsers] = useState([]);
@@ -1045,16 +1126,19 @@ function AdminDashboard({ user, logout }) {
         try {
             const res = await fetch(`${BACKEND_URL}/api/admin/users`, { headers: { 'x-auth-token': token } });
             const data = await res.json();
-            setUsers(data);
-        } catch (err) { console.error(err); }
+            setUsers(Array.isArray(data) ? data : []);
+        } catch (err) {
+            console.error(err);
+            setUsers([]);
+        }
     };
 
-    // Socket.io Listener for Real-Time Location Updates
     useEffect(() => {
         const socket = io(BACKEND_URL);
 
         socket.on('receiveLocation', (data) => {
             setUsers((prevUsers) => {
+                if (!Array.isArray(prevUsers)) return [];
                 const index = prevUsers.findIndex((u) => u.id === data.userId || u._id === data.userId);
                 if (index !== -1) {
                     const updated = [...prevUsers];
@@ -1080,8 +1164,11 @@ function AdminDashboard({ user, logout }) {
         try {
             const res = await fetch(`${BACKEND_URL}/api/admin/user-alerts/${userId}`, { headers: { 'x-auth-token': token } });
             const data = await res.json();
-            setUserAlerts(data);
-        } catch (err) { console.error(err); }
+            setUserAlerts(Array.isArray(data) ? data : []);
+        } catch (err) {
+            console.error(err);
+            setUserAlerts([]);
+        }
     };
 
     const handleUserClick = (u) => {
@@ -1097,7 +1184,18 @@ function AdminDashboard({ user, logout }) {
         <
         nav className = "glass-navbar fade-in" >
         <
-        h1 className = "navbar-brand" > 👑Admin Dashboard < /h1> <
+        div style = {
+            { display: 'flex', alignItems: 'center', gap: '10px' }
+        } >
+        <
+        img src = "/logo.png"
+        alt = "Logo"
+        style = {
+            { width: '34px', height: '34px', borderRadius: '6px' }
+        }
+        /> <
+        h1 className = "navbar-brand" > JOURNEY GUARD ADMIN < /h1> < /
+        div > <
         div className = "navbar-controls" >
         <
         span className = "role-badge" > Admin: { user ? user.email : '' } < /span> <
@@ -1128,7 +1226,7 @@ function AdminDashboard({ user, logout }) {
         } >
         <
         TileLayer url = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" / > {
-            users.map((u) =>
+            Array.isArray(users) && users.map((u) =>
                 u.lastLocation && ( <
                     Marker key = { u.id || u._id }
                     position = {
@@ -1167,7 +1265,7 @@ function AdminDashboard({ user, logout }) {
         ul style = {
             { listStyle: 'none', padding: 0, maxHeight: '180px', overflowY: 'auto' }
         } > {
-            users.map((u) => ( <
+            Array.isArray(users) && users.map((u) => ( <
                 li key = { u.id || u._id }
                 style = {
                     { padding: '8px', borderBottom: '1px solid #eee', cursor: 'pointer' }
@@ -1218,7 +1316,7 @@ function AdminDashboard({ user, logout }) {
                 />
 
                 {
-                    userAlerts.length === 0 ? ( <
+                    !Array.isArray(userAlerts) || userAlerts.length === 0 ? ( <
                         p style = {
                             { color: '#888', fontSize: '0.85rem' }
                         } > No alerts recorded. < /p>
@@ -1232,7 +1330,7 @@ function AdminDashboard({ user, logout }) {
                                 <
                                 strong style = {
                                     { color: '#d32f2f' }
-                                } > { alert.type.toUpperCase() } < /strong> - {alert.message} <
+                                } > { alert.type ? alert.type.toUpperCase() : 'ALERT' } < /strong> - {alert.message} <
                                 br / > < small > 📍{ alert.location ? `${alert.location.lat.toFixed(4)}, ${alert.location.lng.toFixed(4)}` : 'N/A' } < /small> <
                                 br / > < small style = {
                                     { color: '#666' }
@@ -1254,9 +1352,17 @@ function AdminDashboard({ user, logout }) {
 
 // ------------------- Main App -------------------
 function App() {
+    const [showSplash, setShowSplash] = useState(true);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [user, setUser] = useState(null);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setShowSplash(false);
+        }, 2500);
+        return () => clearTimeout(timer);
+    }, []);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -1289,6 +1395,17 @@ function App() {
         setUser(null);
         navigate('/');
     };
+
+    if (showSplash) {
+        return ( <
+            >
+            <
+            style > { globalStyles } < /style> <
+            SplashScreen / >
+            <
+            />
+        );
+    }
 
     return ( <
         >
