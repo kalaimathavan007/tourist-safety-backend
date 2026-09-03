@@ -284,9 +284,12 @@ function SplashScreen() {
     );
 }
 
-// ------------------- Tourist Auth (Email OTP) -------------------
-function TouristAuth({ onLogin }) {
+// ------------------- Unified Animated Auth Screen (Tourist + Admin) -------------------
+function AuthScreen({ onLogin, onAdminLogin, initialMode = 'tourist' }) {
+    const [authMode, setAuthMode] = useState(initialMode); // 'tourist' | 'admin'
     const [isLogin, setIsLogin] = useState(true);
+
+    // Tourist State
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
@@ -295,7 +298,14 @@ function TouristAuth({ onLogin }) {
     const [step, setStep] = useState('credentials');
     const [loading, setLoading] = useState(false);
 
-    const handleSendOtp = async(e) => {
+    // Admin State
+    const [adminEmail, setAdminEmail] = useState('kalaimathavan007@gmail.com');
+    const [adminOtp, setAdminOtp] = useState('');
+    const [adminStep, setAdminStep] = useState('email');
+    const [adminLoading, setAdminLoading] = useState(false);
+
+    // Tourist Handlers
+    const handleSendOtp = async (e) => {
         e.preventDefault();
         setLoading(true);
         const url = isLogin ? `${BACKEND_URL}/api/auth/send-otp` : `${BACKEND_URL}/api/auth/register-send-otp`;
@@ -320,7 +330,7 @@ function TouristAuth({ onLogin }) {
         setLoading(false);
     };
 
-    const handleVerifyOtp = async(e) => {
+    const handleVerifyOtp = async (e) => {
         e.preventDefault();
         setLoading(true);
         const url = `${BACKEND_URL}/api/auth/verify-otp`;
@@ -348,157 +358,35 @@ function TouristAuth({ onLogin }) {
         setLoading(false);
     };
 
-    return ( <
-        div className = "gradient-bg"
-        style = {
-            { display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '15px' }
-        } >
-        <
-        div className = "auth-card-styled fade-in" >
-        <
-        img src = "/logo.png"
-        alt = "Journey Guard"
-        style = {
-            { width: '60px', height: '60px', marginBottom: '10px' }
-        }
-        /> <
-        h2 style = {
-            { color: '#1e3c72', marginBottom: '15px', fontSize: '1.4rem' }
-        } > Journey Guard < /h2> <
-        h3 style = {
-            { color: '#555', fontSize: '1.05rem', marginBottom: '15px' }
-        } > { step === 'otp' ? 'Enter Gmail OTP' : isLogin ? 'Tourist Login' : 'Create an Account' } <
-        /h3>
-
-        {
-            step === 'credentials' ? ( <
-                form onSubmit = { handleSendOtp } > {!isLogin && ( <
-                        input className = "modern-input"
-                        type = "text"
-                        placeholder = "Full Name"
-                        value = { name }
-                        onChange = {
-                            (e) => setName(e.target.value)
-                        }
-                        required / >
-                    )
-                } <
-                input className = "modern-input"
-                type = "email"
-                placeholder = "Email Address"
-                value = { email }
-                onChange = {
-                    (e) => setEmail(e.target.value)
-                }
-                required / >
-                <
-                input className = "modern-input"
-                type = "password"
-                placeholder = "Password"
-                value = { password }
-                onChange = {
-                    (e) => setPassword(e.target.value)
-                }
-                required / > {!isLogin && ( <
-                        input className = "modern-input"
-                        type = "tel"
-                        placeholder = "Phone (optional)"
-                        value = { phone }
-                        onChange = {
-                            (e) => setPhone(e.target.value)
-                        }
-                        />
-                    )
-                } <
-                button className = "action-btn"
-                type = "submit"
-                style = {
-                    { width: '100%', marginTop: '12px', padding: '12px' }
-                }
-                disabled = { loading } > { loading ? 'Sending OTP...' : isLogin ? 'Send Login OTP' : 'Send Registration OTP' } <
-                /button> < /
-                form >
-            ) : ( <
-                form onSubmit = { handleVerifyOtp } >
-                <
-                input className = "modern-input"
-                type = "text"
-                placeholder = "Enter 6-digit OTP"
-                value = { otp }
-                onChange = {
-                    (e) => setOtp(e.target.value)
-                }
-                required / >
-                <
-                button className = "action-btn"
-                type = "submit"
-                style = {
-                    { width: '100%', marginTop: '12px', padding: '12px' }
-                }
-                disabled = { loading } > { loading ? 'Verifying...' : 'Verify & Login' } <
-                /button> <
-                p onClick = {
-                    () => setStep('credentials')
-                }
-                style = {
-                    { cursor: 'pointer', marginTop: '15px', color: '#1e3c72', fontWeight: 'bold', fontSize: '0.9rem' }
-                } > ←Back to Credentials <
-                /p> < /
-                form >
-            )
-        }
-
-        {
-            step === 'credentials' && ( <
-                p onClick = {
-                    () => setIsLogin(!isLogin)
-                }
-                style = {
-                    { cursor: 'pointer', marginTop: '15px', color: '#1e3c72', fontWeight: 'bold', fontSize: '0.9rem' }
-                } > { isLogin ? 'New user? Register here ➔' : 'Already have an account? Login ➔' } <
-                /p>
-            )
-        } <
-        /div> < /
-        div >
-    );
-}
-
-// ------------------- Admin Auth -------------------
-function AdminAuth({ onAdminLogin }) {
-    const [email, setEmail] = useState('');
-    const [otp, setOtp] = useState('');
-    const [step, setStep] = useState('email');
-    const [loading, setLoading] = useState(false);
-
-    const sendOtp = async(e) => {
+    // Admin Handlers
+    const handleSendAdminOtp = async (e) => {
         e.preventDefault();
-        setLoading(true);
+        setAdminLoading(true);
         try {
             const res = await fetch(`${BACKEND_URL}/api/admin/send-otp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email })
+                body: JSON.stringify({ email: adminEmail })
             });
             const data = await res.json();
             if (data.success) {
-                setStep('otp');
-                alert('OTP sent to your email');
+                setAdminStep('otp');
+                alert('Admin OTP sent to your email!');
             } else {
-                alert(data.error || 'Failed to send OTP');
+                alert(data.error || 'Failed to send OTP. Ensure email matches ADMIN_EMAIL.');
             }
-        } catch (err) { alert('Error sending OTP'); }
-        setLoading(false);
+        } catch (err) { alert('Error sending Admin OTP'); }
+        setAdminLoading(false);
     };
 
-    const verifyOtp = async(e) => {
+    const handleVerifyAdminOtp = async (e) => {
         e.preventDefault();
-        setLoading(true);
+        setAdminLoading(true);
         try {
             const res = await fetch(`${BACKEND_URL}/api/admin/verify-otp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, otp })
+                body: JSON.stringify({ email: adminEmail, otp: adminOtp })
             });
             const data = await res.json();
             if (data.token) {
@@ -506,87 +394,138 @@ function AdminAuth({ onAdminLogin }) {
                 localStorage.setItem('role', data.user.role);
                 localStorage.setItem('userId', data.user.id);
                 localStorage.setItem('userName', data.user.name || 'Admin');
-                localStorage.setItem('userEmail', data.user.email || email);
+                localStorage.setItem('userEmail', data.user.email || adminEmail);
                 onAdminLogin(data.user);
             } else {
                 alert(data.error || 'Invalid OTP');
             }
         } catch (err) { alert('Verification failed'); }
-        setLoading(false);
+        setAdminLoading(false);
     };
 
-    return ( <
-            div className = "gradient-bg"
-            style = {
-                { display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '15px' }
-            } >
-            <
-            div className = "auth-card-styled fade-in" >
-            <
-            img src = "/logo.png"
-            alt = "Journey Guard"
-            style = {
-                { width: '60px', height: '60px', marginBottom: '10px' }
-            }
-            /> <
-            h2 style = {
-                { color: '#1e3c72', marginBottom: '15px', fontSize: '1.4rem' }
-            } > 🔐Admin Panel < /h2> {
-            step === 'email' ? ( <
-                form onSubmit = { sendOtp } >
-                <
-                input className = "modern-input"
-                type = "email"
-                placeholder = "Admin Email"
-                value = { email }
-                onChange = {
-                    (e) => setEmail(e.target.value)
-                }
-                required / >
-                <
-                button className = "action-btn"
-                type = "submit"
-                style = {
-                    { width: '100%', marginTop: '12px', padding: '12px' }
-                }
-                disabled = { loading } > { loading ? 'Sending Secure OTP...' : 'Send OTP' } <
-                /button> < /
-                form >
-            ) : ( <
-                form onSubmit = { verifyOtp } >
-                <
-                input className = "modern-input"
-                type = "text"
-                placeholder = "Enter Secure OTP"
-                value = { otp }
-                onChange = {
-                    (e) => setOtp(e.target.value)
-                }
-                required / >
-                <
-                button className = "action-btn"
-                type = "submit"
-                style = {
-                    { width: '100%', marginTop: '12px', padding: '12px' }
-                }
-                disabled = { loading } > { loading ? 'Verifying...' : 'Verify Identity' } <
-                /button> < /
-                form >
-            )
-        } {
-            step === 'otp' && ( <
-                p onClick = {
-                    () => setStep('email')
-                }
-                style = {
-                    { cursor: 'pointer', marginTop: '15px', color: '#1e3c72', fontWeight: 'bold', fontSize: '0.9rem' }
-                } > ←Back to email <
-                /p>
-            )
-        } <
-        /div> < /
-        div >
-);
+    return (
+        <div className="gradient-bg" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '15px' }}>
+            <div className="auth-card-styled fade-in" style={{ width: '100%', maxWidth: '420px', borderRadius: '20px', boxShadow: '0 20px 40px rgba(0,0,0,0.25)', background: 'rgba(255, 255, 255, 0.95)', padding: '25px' }}>
+
+                {/* Logo & Header */}
+                <div style={{ textAlign: 'center', marginBottom: '18px' }}>
+                    <img src="/logo.png" alt="Journey Guard" style={{ width: '65px', height: '65px', marginBottom: '8px' }} />
+                    <h2 style={{ color: '#1e3c72', fontSize: '1.5rem', fontWeight: 'bold', margin: '0' }}>Journey Guard</h2>
+                    <p style={{ color: '#666', fontSize: '0.85rem', marginTop: '4px' }}>Smart Tourist Safety System</p>
+                </div>
+
+                {/* Animated Mode Switcher (Tourist / Admin) */}
+                <div style={{ display: 'flex', background: '#eef2f5', borderRadius: '30px', padding: '4px', marginBottom: '20px' }}>
+                    <button
+                        type="button"
+                        onClick={() => { setAuthMode('tourist'); setStep('credentials'); }}
+                        style={{
+                            flex: 1,
+                            padding: '10px',
+                            borderRadius: '25px',
+                            border: 'none',
+                            fontWeight: '600',
+                            fontSize: '0.9rem',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease',
+                            background: authMode === 'tourist' ? '#1e3c72' : 'transparent',
+                            color: authMode === 'tourist' ? '#ffffff' : '#555',
+                            boxShadow: authMode === 'tourist' ? '0 4px 10px rgba(30,60,114,0.3)' : 'none'
+                        }}>
+                        🧳 Tourist Portal
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => { setAuthMode('admin'); setAdminStep('email'); }}
+                        style={{
+                            flex: 1,
+                            padding: '10px',
+                            borderRadius: '25px',
+                            border: 'none',
+                            fontWeight: '600',
+                            fontSize: '0.9rem',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease',
+                            background: authMode === 'admin' ? '#1e3c72' : 'transparent',
+                            color: authMode === 'admin' ? '#ffffff' : '#555',
+                            boxShadow: authMode === 'admin' ? '0 4px 10px rgba(30,60,114,0.3)' : 'none'
+                        }}>
+                        🔐 Admin Portal
+                    </button>
+                </div>
+
+                {/* TOURIST MODE */}
+                {authMode === 'tourist' && (
+                    <div className="fade-in">
+                        <h3 style={{ color: '#333', fontSize: '1.05rem', marginBottom: '15px', textAlign: 'center' }}>
+                            {step === 'otp' ? 'Enter Gmail OTP' : isLogin ? 'Tourist Login' : 'Create an Account'}
+                        </h3>
+
+                        {step === 'credentials' ? (
+                            <form onSubmit={handleSendOtp}>
+                                {!isLogin && (
+                                    <input className="modern-input" type="text" placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} required />
+                                )}
+                                <input className="modern-input" type="email" placeholder="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                                <input className="modern-input" type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                                {!isLogin && (
+                                    <input className="modern-input" type="tel" placeholder="Phone (optional)" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                                )}
+                                <button className="action-btn" type="submit" style={{ width: '100%', marginTop: '12px', padding: '12px' }} disabled={loading}>
+                                    {loading ? 'Sending OTP...' : isLogin ? 'Send Login OTP' : 'Send Registration OTP'}
+                                </button>
+                            </form>
+                        ) : (
+                            <form onSubmit={handleVerifyOtp}>
+                                <input className="modern-input" type="text" placeholder="Enter 6-digit OTP" value={otp} onChange={(e) => setOtp(e.target.value)} required />
+                                <button className="action-btn" type="submit" style={{ width: '100%', marginTop: '12px', padding: '12px' }} disabled={loading}>
+                                    {loading ? 'Verifying...' : 'Verify & Login'}
+                                </button>
+                                <p onClick={() => setStep('credentials')} style={{ cursor: 'pointer', marginTop: '15px', color: '#1e3c72', fontWeight: 'bold', fontSize: '0.9rem', textAlign: 'center' }}>
+                                    ← Back to Credentials
+                                </p>
+                            </form>
+                        )}
+
+                        {step === 'credentials' && (
+                            <p onClick={() => setIsLogin(!isLogin)} style={{ cursor: 'pointer', marginTop: '15px', color: '#1e3c72', fontWeight: 'bold', fontSize: '0.9rem', textAlign: 'center' }}>
+                                {isLogin ? 'New user? Register here ➔' : 'Already have an account? Login ➔'}
+                            </p>
+                        )}
+                    </div>
+                )}
+
+                {/* ADMIN MODE */}
+                {authMode === 'admin' && (
+                    <div className="fade-in">
+                        <h3 style={{ color: '#333', fontSize: '1.05rem', marginBottom: '15px', textAlign: 'center' }}>
+                            {adminStep === 'otp' ? 'Enter Admin OTP' : 'Admin Authentication'}
+                        </h3>
+
+                        {adminStep === 'email' ? (
+                            <form onSubmit={handleSendAdminOtp}>
+                                <input className="modern-input" type="email" placeholder="Admin Email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} required />
+                                <button className="action-btn" type="submit" style={{ width: '100%', marginTop: '12px', padding: '12px' }} disabled={adminLoading}>
+                                    {adminLoading ? 'Sending Secure OTP...' : 'Send Admin OTP'}
+                                </button>
+                            </form>
+                        ) : (
+                            <form onSubmit={handleVerifyAdminOtp}>
+                                <input className="modern-input" type="text" placeholder="Enter Admin 6-digit OTP" value={adminOtp} onChange={(e) => setAdminOtp(e.target.value)} required />
+                                <button className="action-btn" type="submit" style={{ width: '100%', marginTop: '12px', padding: '12px' }} disabled={adminLoading}>
+                                    {adminLoading ? 'Verifying...' : 'Verify & Open Dashboard'}
+                                </button>
+                                <p onClick={() => setAdminStep('email')} style={{ cursor: 'pointer', marginTop: '15px', color: '#1e3c72', fontWeight: 'bold', fontSize: '0.9rem', textAlign: 'center' }}>
+                                    ← Back to Admin Email
+                                </p>
+                            </form>
+                        )}
+                    </div>
+                )}
+
+            </div>
+        </div>
+    );
 }
 
 // ------------------- Tourist Dashboard -------------------
@@ -1414,12 +1353,10 @@ function App() {
             Routes >
             <
             Route path = "/"
-            element = { < TouristAuth onLogin = { handleLogin }
-                />} / >
-                <
-                Route path = "/admin-login"
-                element = { < AdminAuth onAdminLogin = { handleAdminLogin }
-                    />} / >
+            element = { < AuthScreen onLogin = { handleLogin } onAdminLogin = { handleAdminLogin } initialMode = "tourist" / > } / >
+            <
+            Route path = "/admin-login"
+            element = { < AuthScreen onLogin = { handleLogin } onAdminLogin = { handleAdminLogin } initialMode = "admin" / > } / >
                     <
                     Route path = "*"
                     element = { < Navigate to = "/" / > }
