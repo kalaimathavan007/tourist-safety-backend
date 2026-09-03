@@ -1,4 +1,4 @@
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://tourist-safety-backend-hzpg.onrender.com';
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://tourist-safety-backend-production-ba8e.up.railway.app';
 
 function History() {
     const [history, setHistory] = useState([]);

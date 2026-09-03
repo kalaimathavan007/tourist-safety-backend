@@ -6,7 +6,7 @@ import io from 'socket.io-client';
 import 'leaflet/dist/leaflet.css';
 import './App.css';
 
-const BACKEND_URL = 'https://tourist-safety-backend-hzpg.onrender.com';
+const BACKEND_URL = 'https://tourist-safety-backend-production-ba8e.up.railway.app';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
