@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs'); // Password-a encrypt panna
 const jwt = require('jsonwebtoken'); // Security token generate panna
 const nodemailer = require('nodemailer'); // Email anuppa
+const dns = require('dns');
 const User = require('../models/User'); // Unga User Database Model
 
 // OTP-kalai temporary-aaga save panna oru object (Memory store)
@@ -17,7 +18,7 @@ const transporter = nodemailer.createTransport({
         user: process.env.EMAIL_USER, // Unga Gmail address (e.g., 'yourmail@gmail.com')
         pass: process.env.EMAIL_PASS // Gmail App Password
     },
-    family: 4 // IPv4 forcing for cloud servers (Render / AWS / Heroku)
+    lookup: (hostname, options, callback) => dns.lookup(hostname, { family: 4 }, callback)
 });
 
 // -------------------------------------------------------------

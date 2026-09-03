@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const dns = require('dns');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Alert = require('../models/Alert');
@@ -19,7 +20,7 @@ const transporter = nodemailer.createTransport({
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
     },
-    family: 4
+    lookup: (hostname, options, callback) => dns.lookup(hostname, { family: 4 }, callback)
 });
 
 // Allowed admin email from .env
