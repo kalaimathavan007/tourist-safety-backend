@@ -8,6 +8,18 @@ const path = require('path');
 
 dotenv.config();
 
+// Force IPv4 for Nodemailer on Cloud hosting (Render) by disabling IPv6 DNS resolution
+const dns = require('dns');
+if (dns && dns.resolve6) {
+    const originalResolve6 = dns.resolve6;
+    dns.resolve6 = function(hostname, options, callback) {
+        if (typeof options === 'function') callback = options;
+        const err = new Error('IPv6 disabled');
+        err.code = 'ENODATA';
+        if (typeof callback === 'function') return callback(err);
+    };
+}
+
 const app = express();
 const server = http.createServer(app);
 
