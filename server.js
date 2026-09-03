@@ -13,7 +13,7 @@ const server = http.createServer(app);
 
 // 1. CORS Configuration (Express & Socket.io rendukkum)
 const corsOptions = {
-    origin: "*", // Development/Cloud-ku all origins allow pandrom
+    origin: true, // Dynamically reflects request origin (Capacitor/Mobile/Web)
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
 };
