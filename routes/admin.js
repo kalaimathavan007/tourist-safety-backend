@@ -1,28 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
-const dns = require('dns');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Alert = require('../models/Alert');
 const auth = require('../middleware/auth');
+const { sendEmail } = require('../services/emailService');
 
 // Store OTPs temporarily (in-memory for demo)
 const otpStore = new Map();
-
-// Email transporter
-const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
-    requireTLS: true,
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
-    tls: { rejectUnauthorized: false }
-});
 
 // Allowed admin email from .env
 const ALLOWED_ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
@@ -36,8 +22,7 @@ router.post('/send-otp', async(req, res) => {
     const otp = crypto.randomInt(100000, 999999).toString();
     otpStore.set(email, { otp, expires: Date.now() + 5 * 60 * 1000 }); // 5 min
     try {
-        await transporter.sendMail({
-            from: process.env.EMAIL_USER,
+        await sendEmail({
             to: email,
             subject: 'Admin Login OTP',
             text: `Your OTP for admin login is ${otp}. Valid for 5 minutes.`,
