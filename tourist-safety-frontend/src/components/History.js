@@ -1,12 +1,11 @@
-import React, { useEffect, useState } from 'react';
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://tourist-safety-backend-hzpg.onrender.com';
 
 function History() {
     const [history, setHistory] = useState([]);
 
     useEffect(() => {
         const userId = localStorage.getItem('userId');
-        // Make sure your backend route is correct
-        fetch('http://localhost:5000/api/history', {
+        fetch(`${BACKEND_URL}/api/history`, {
                 headers: { 'x-user-id': userId }
             })
             .then(res => res.json())

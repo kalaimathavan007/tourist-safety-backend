@@ -10,11 +10,14 @@ const otpStore = {};
 
 // Email anuppurathukkana Setup (Gmail)
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
     auth: {
         user: process.env.EMAIL_USER, // Unga Gmail address (e.g., 'yourmail@gmail.com')
         pass: process.env.EMAIL_PASS // Gmail App Password
-    }
+    },
+    family: 4 // IPv4 forcing for cloud servers (Render / AWS / Heroku)
 });
 
 // -------------------------------------------------------------
@@ -46,6 +49,7 @@ router.post('/send-otp', async(req, res) => {
 
         res.json({ success: true, msg: 'OTP sent to your email successfully.' });
     } catch (err) {
+        console.error('Login OTP send error:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -84,6 +88,7 @@ router.post('/register-send-otp', async(req, res) => {
 
         res.json({ success: true, msg: 'OTP sent to your email successfully.' });
     } catch (err) {
+        console.error('Register OTP send error:', err);
         res.status(500).json({ error: err.message });
     }
 });
