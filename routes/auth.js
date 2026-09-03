@@ -12,13 +12,14 @@ const otpStore = {};
 // Email anuppurathukkana Setup (Gmail)
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
+    port: 587,
+    secure: false,
+    requireTLS: true,
     auth: {
         user: process.env.EMAIL_USER, // Unga Gmail address (e.g., 'yourmail@gmail.com')
         pass: process.env.EMAIL_PASS // Gmail App Password
     },
-    lookup: (hostname, options, callback) => dns.lookup(hostname, { family: 4 }, callback)
+    tls: { rejectUnauthorized: false }
 });
 
 // -------------------------------------------------------------
