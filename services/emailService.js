@@ -15,13 +15,14 @@ const transporter = nodemailer.createTransport({
 
 /**
  * Universal Fast Email Sender
- * Uses Resend HTTP API (Port 443) if RESEND_API_KEY is available for 0.3s lightning fast delivery on Cloud.
+ * Uses Resend HTTP API or Brevo HTTP API (Port 443) for 0.3s lightning fast delivery on Cloud.
  * Falls back to Nodemailer SMTP automatically.
  */
 const sendEmail = async ({ to, subject, text, html }) => {
     const resendKey = (process.env.RESEND_API_KEY || process.env.RESEND_KEY || '').trim();
+    const brevoKey = (process.env.BREVO_API_KEY || '').trim();
 
-    // A. Use Resend HTTP API if key is provided (Bypasses all SMTP blocks on Cloud)
+    // 1. Use Resend HTTP API if key is provided
     if (resendKey) {
         console.log('🚀 Sending email via Resend HTTP API to:', to);
         try {
@@ -32,7 +33,7 @@ const sendEmail = async ({ to, subject, text, html }) => {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    from: 'Tourist Safety <onboarding@resend.dev>',
+                    from: 'onboarding@resend.dev',
                     to: Array.isArray(to) ? to : [to],
                     subject,
                     text,
@@ -45,17 +46,49 @@ const sendEmail = async ({ to, subject, text, html }) => {
                 return { success: true, messageId: data.id };
             } else {
                 console.error('❌ Resend API Error:', data);
-                throw new Error(`Resend Error: ${data.message || data.name || 'Failed to send email'}`);
+                throw new Error(`Resend Error: ${data.message || data.name || 'Failed to send email via Resend'}`);
             }
         } catch (err) {
             console.error('❌ Resend HTTP failed:', err.message);
+            if (!brevoKey) throw err;
+        }
+    }
+
+    // 2. Use Brevo HTTP API if key is provided
+    if (brevoKey) {
+        console.log('🚀 Sending email via Brevo HTTP API to:', to);
+        try {
+            const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+                method: 'POST',
+                headers: {
+                    'api-key': brevoKey,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    sender: { name: 'Tourist Safety', email: process.env.EMAIL_USER || 'kalaimathavan007@gmail.com' },
+                    to: (Array.isArray(to) ? to : [to]).map(e => ({ email: e })),
+                    subject,
+                    textContent: text,
+                    htmlContent: html || `<p>${text}</p>`
+                })
+            });
+            const data = await response.json();
+            if (response.ok) {
+                console.log('✅ Email sent via Brevo HTTP API:', data.messageId);
+                return { success: true, messageId: data.messageId };
+            } else {
+                console.error('❌ Brevo API Error:', data);
+                throw new Error(`Brevo Error: ${data.message || 'Failed to send email via Brevo'}`);
+            }
+        } catch (err) {
+            console.error('❌ Brevo HTTP failed:', err.message);
             throw err;
         }
     }
 
-    // B. Nodemailer Fallback
+    // 3. Nodemailer Fallback
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-        throw new Error('EMAIL_USER, EMAIL_PASS or RESEND_API_KEY is missing in server environment variables.');
+        throw new Error('EMAIL_USER, EMAIL_PASS, or RESEND_API_KEY is missing in server environment variables.');
     }
 
     console.log('📧 Sending email via Nodemailer SMTP...');

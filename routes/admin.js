@@ -17,13 +17,15 @@ const getAdminEmail = () => (process.env.ADMIN_EMAIL || process.env.EMAIL_USER |
 router.post('/send-otp', async(req, res) => {
     const { email } = req.body;
     const allowedEmail = getAdminEmail();
+    const adminEmailFormatted = email ? email.toLowerCase().trim() : '';
 
-    if (!email || email.toLowerCase().trim() !== allowedEmail) {
+    if (!adminEmailFormatted || adminEmailFormatted !== allowedEmail) {
         return res.status(403).json({ error: `Unauthorized email (${email}). Must match Admin Email (${allowedEmail})` });
     }
     const otp = crypto.randomInt(100000, 999999).toString();
-    const adminEmailFormatted = email.toLowerCase().trim();
     otpStore.set(adminEmailFormatted, { otp, expires: Date.now() + 5 * 60 * 1000 }); // 5 min
+    console.log(`🔐 ADMIN OTP GENERATED for ${adminEmailFormatted}: ${otp}`);
+
     try {
         await sendEmail({
             to: adminEmailFormatted,
@@ -50,18 +52,18 @@ router.post('/verify-otp', async(req, res) => {
     if (!record || record.otp !== otp || record.expires < Date.now()) {
         return res.status(401).json({ error: 'Invalid or expired OTP' });
     }
-    otpStore.delete(email);
+    otpStore.delete(adminEmailFormatted);
     // Find or create admin user
-    let user = await User.findOne({ email });
+    let user = await User.findOne({ email: adminEmailFormatted });
     if (!user) {
-        user = new User({ name: 'Admin', email, password: 'admin-otp-only', role: 'admin' });
+        user = new User({ name: 'Admin', email: adminEmailFormatted, password: 'admin-otp-only', role: 'admin' });
         await user.save();
     } else {
         user.role = 'admin';
         await user.save();
     }
-    const token = jwt.sign({ id: user.id, role: 'admin' }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: 'admin' } });
+    const token = jwt.sign({ id: user.id, role: 'admin' }, process.env.JWT_SECRET || 'supersecretkey', { expiresIn: '7d' });
+    res.json({ token, user: { id: user.id, name: user.name, email: adminEmailFormatted, role: 'admin' } });
 });
 
 // Get all users with last location (for admin dashboard)
