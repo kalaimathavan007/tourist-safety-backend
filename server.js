@@ -99,14 +99,15 @@ app.use((err, req, res, next) => {
 
 // 8. MongoDB Connection & Server Start
 const PORT = process.env.PORT || 5000;
-const mongoURI = process.env.MONGODB_URI;
+const mongoURI = process.env.MONGODB_URI || process.env.MONGO_URI;
 
 server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 
 if (mongoURI) {
-    mongoose.connect(mongoURI)
+    console.log('🔄 Connecting to MongoDB Atlas...');
+    mongoose.connect(mongoURI, { serverSelectionTimeoutMS: 10000 })
         .then(() => console.log('✅ MongoDB connected successfully'))
         .catch(err => console.error('❌ MongoDB connection error:', err.message));
 } else {
-    console.error('❌ MONGODB_URI is missing in environment variables.');
+    console.error('❌ MONGODB_URI / MONGO_URI is missing in environment variables.');
 }

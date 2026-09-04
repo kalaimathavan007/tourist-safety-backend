@@ -2,8 +2,19 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const { sendEmail } = require('../services/emailService');
+
+// Helper to ensure MongoDB connection is active before running queries
+const ensureDbConnected = async () => {
+    if (mongoose.connection.readyState !== 1) {
+        const mongoURI = process.env.MONGODB_URI || process.env.MONGO_URI;
+        if (mongoURI) {
+            await mongoose.connect(mongoURI, { serverSelectionTimeoutMS: 10000 });
+        }
+    }
+};
 
 // OTP Memory Store
 const otpStore = {};
@@ -14,6 +25,7 @@ const otpStore = {};
 router.post('/send-otp', async(req, res) => {
     const { email, password } = req.body;
     try {
+        await ensureDbConnected();
         const user = await User.findOne({ email });
         if (!user) return res.status(400).json({ msg: 'User not found. Please register first.' });
 
@@ -42,6 +54,7 @@ router.post('/send-otp', async(req, res) => {
 router.post('/register-send-otp', async(req, res) => {
     const { name, email, password, phone, role } = req.body;
     try {
+        await ensureDbConnected();
         let user = await User.findOne({ email });
         if (user) return res.status(400).json({ msg: 'User already exists. Please login.' });
 
@@ -75,6 +88,7 @@ router.post('/register-send-otp', async(req, res) => {
 router.post('/verify-otp', async(req, res) => {
     const { email, otp } = req.body;
     try {
+        await ensureDbConnected();
         const record = otpStore[email];
         if (!record || record.otp !== otp || Date.now() > record.expires) {
             return res.status(400).json({ msg: 'Invalid or Expired OTP' });
