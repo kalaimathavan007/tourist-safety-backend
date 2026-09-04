@@ -11,6 +11,7 @@ dotenv.config();
 // Force IPv4 for Nodemailer on Cloud hosting (Render) by filtering network interfaces & dns
 const os = require('os');
 const dns = require('dns');
+try { dns.setServers(['8.8.8.8', '1.1.1.1']); } catch(e) {}
 if (os.networkInterfaces) {
     const origInterfaces = os.networkInterfaces;
     os.networkInterfaces = function() {
