@@ -17,7 +17,7 @@ const ALLOWED_ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
 router.post('/send-otp', async(req, res) => {
     const { email } = req.body;
     if (email !== ALLOWED_ADMIN_EMAIL) {
-        return res.status(403).json({ error: 'Unauthorized email' });
+        return res.status(403).json({ error: `Unauthorized email. Must match ADMIN_EMAIL (${ALLOWED_ADMIN_EMAIL})` });
     }
     const otp = crypto.randomInt(100000, 999999).toString();
     otpStore.set(email, { otp, expires: Date.now() + 5 * 60 * 1000 }); // 5 min
@@ -29,8 +29,8 @@ router.post('/send-otp', async(req, res) => {
         });
         res.json({ success: true, message: 'OTP sent' });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to send OTP' });
+        console.error('Admin OTP Send Error:', err);
+        res.status(500).json({ error: err.message || 'Failed to send OTP' });
     }
 });
 

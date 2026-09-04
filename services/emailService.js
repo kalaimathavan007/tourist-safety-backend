@@ -19,13 +19,13 @@ const transporter = nodemailer.createTransport({
  * Falls back to Nodemailer SMTP automatically.
  */
 const sendEmail = async ({ to, subject, text, html }) => {
-    // A. Use Resend HTTP API if key is provided (Bypasses all SMTP blocks on Render/AWS)
+    // A. Use Resend HTTP API if key is provided (Bypasses all SMTP blocks on Render/AWS/Railway)
     if (process.env.RESEND_API_KEY) {
         try {
             const response = await fetch('https://api.resend.com/emails', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+                    'Authorization': `Bearer ${process.env.RESEND_API_KEY.trim()}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
@@ -42,9 +42,11 @@ const sendEmail = async ({ to, subject, text, html }) => {
                 return { success: true, messageId: data.id };
             } else {
                 console.warn('⚠️ Resend HTTP warning:', data);
+                throw new Error(data.message || data.name || 'Resend email error');
             }
         } catch (err) {
-            console.error('❌ Resend HTTP failed, using SMTP fallback:', err.message);
+            console.error('❌ Resend HTTP failed:', err.message);
+            throw err;
         }
     }
 
