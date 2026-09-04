@@ -1,6 +1,6 @@
 const nodemailer = require('nodemailer');
 
-// 1. Nodemailer Transporter Setup (Port 587 STARTTLS)
+// Nodemailer Transporter Setup (Port 587 STARTTLS)
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 587,
@@ -19,13 +19,16 @@ const transporter = nodemailer.createTransport({
  * Falls back to Nodemailer SMTP automatically.
  */
 const sendEmail = async ({ to, subject, text, html }) => {
-    // A. Use Resend HTTP API if key is provided (Bypasses all SMTP blocks on Render/AWS/Railway)
-    if (process.env.RESEND_API_KEY) {
+    const resendKey = (process.env.RESEND_API_KEY || process.env.RESEND_KEY || '').trim();
+
+    // A. Use Resend HTTP API if key is provided (Bypasses all SMTP blocks on Cloud)
+    if (resendKey) {
+        console.log('🚀 Sending email via Resend HTTP API to:', to);
         try {
             const response = await fetch('https://api.resend.com/emails', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${process.env.RESEND_API_KEY.trim()}`,
+                    'Authorization': `Bearer ${resendKey}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
@@ -37,12 +40,12 @@ const sendEmail = async ({ to, subject, text, html }) => {
                 })
             });
             const data = await response.json();
-            if (data.id) {
+            if (response.ok && data.id) {
                 console.log('✅ Email sent via Resend HTTP API:', data.id);
                 return { success: true, messageId: data.id };
             } else {
-                console.warn('⚠️ Resend HTTP warning:', data);
-                throw new Error(data.message || data.name || 'Resend email error');
+                console.error('❌ Resend API Error:', data);
+                throw new Error(`Resend Error: ${data.message || data.name || 'Failed to send email'}`);
             }
         } catch (err) {
             console.error('❌ Resend HTTP failed:', err.message);
@@ -51,6 +54,10 @@ const sendEmail = async ({ to, subject, text, html }) => {
     }
 
     // B. Nodemailer Fallback
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+        throw new Error('EMAIL_USER, EMAIL_PASS or RESEND_API_KEY is missing in server environment variables.');
+    }
+
     console.log('📧 Sending email via Nodemailer SMTP...');
     return await transporter.sendMail({
         from: process.env.EMAIL_USER,
