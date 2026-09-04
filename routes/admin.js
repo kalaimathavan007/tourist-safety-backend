@@ -10,20 +10,23 @@ const { sendEmail } = require('../services/emailService');
 // Store OTPs temporarily (in-memory for demo)
 const otpStore = new Map();
 
-// Allowed admin email from .env
-const ALLOWED_ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
+// Allowed admin email from .env (defaults to kalaimathavan007@gmail.com or EMAIL_USER)
+const getAdminEmail = () => (process.env.ADMIN_EMAIL || process.env.EMAIL_USER || 'kalaimathavan007@gmail.com').toLowerCase().trim();
 
 // Send OTP
 router.post('/send-otp', async(req, res) => {
     const { email } = req.body;
-    if (email !== ALLOWED_ADMIN_EMAIL) {
-        return res.status(403).json({ error: `Unauthorized email. Must match ADMIN_EMAIL (${ALLOWED_ADMIN_EMAIL})` });
+    const allowedEmail = getAdminEmail();
+
+    if (!email || email.toLowerCase().trim() !== allowedEmail) {
+        return res.status(403).json({ error: `Unauthorized email (${email}). Must match Admin Email (${allowedEmail})` });
     }
     const otp = crypto.randomInt(100000, 999999).toString();
-    otpStore.set(email, { otp, expires: Date.now() + 5 * 60 * 1000 }); // 5 min
+    const adminEmailFormatted = email.toLowerCase().trim();
+    otpStore.set(adminEmailFormatted, { otp, expires: Date.now() + 5 * 60 * 1000 }); // 5 min
     try {
         await sendEmail({
-            to: email,
+            to: adminEmailFormatted,
             subject: 'Admin Login OTP',
             text: `Your OTP for admin login is ${otp}. Valid for 5 minutes.`,
         });
@@ -37,10 +40,13 @@ router.post('/send-otp', async(req, res) => {
 // Verify OTP and login
 router.post('/verify-otp', async(req, res) => {
     const { email, otp } = req.body;
-    if (email !== ALLOWED_ADMIN_EMAIL) {
+    const allowedEmail = getAdminEmail();
+    const adminEmailFormatted = email ? email.toLowerCase().trim() : '';
+
+    if (adminEmailFormatted !== allowedEmail) {
         return res.status(403).json({ error: 'Unauthorized email' });
     }
-    const record = otpStore.get(email);
+    const record = otpStore.get(adminEmailFormatted);
     if (!record || record.otp !== otp || record.expires < Date.now()) {
         return res.status(401).json({ error: 'Invalid or expired OTP' });
     }
