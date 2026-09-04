@@ -105,9 +105,9 @@ server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 
 if (mongoURI) {
     console.log('🔄 Connecting to MongoDB Atlas...');
-    mongoose.connect(mongoURI, { serverSelectionTimeoutMS: 10000 })
+    mongoose.connect(mongoURI, { serverSelectionTimeoutMS: 10000, family: 4 })
         .then(() => console.log('✅ MongoDB connected successfully'))
-        .catch(err => console.error('❌ MongoDB connection error:', err.message));
+        .catch(err => console.error('❌ MongoDB connection error:', err.stack || err.message));
 } else {
     console.error('❌ MONGODB_URI / MONGO_URI is missing in environment variables.');
 }

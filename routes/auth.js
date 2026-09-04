@@ -10,9 +10,10 @@ const { sendEmail } = require('../services/emailService');
 const ensureDbConnected = async () => {
     if (mongoose.connection.readyState !== 1) {
         const mongoURI = process.env.MONGODB_URI || process.env.MONGO_URI;
-        if (mongoURI) {
-            await mongoose.connect(mongoURI, { serverSelectionTimeoutMS: 10000 });
+        if (!mongoURI) {
+            throw new Error('MONGODB_URI environment variable is missing on server');
         }
+        await mongoose.connect(mongoURI, { serverSelectionTimeoutMS: 10000, family: 4 });
     }
 };
 
