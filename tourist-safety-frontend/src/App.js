@@ -320,7 +320,8 @@ function AuthScreen({ onLogin, onAdminLogin, initialMode = 'tourist' }) {
             const data = await res.json();
             if (data.success) {
                 setStep('otp');
-                alert('OTP sent to your Gmail!');
+                const notice = data.debugOtp ? `\n(Test OTP: ${data.debugOtp})` : '';
+                alert(`OTP sent to your Gmail!${notice}`);
             } else {
                 alert(data.msg || data.error || 'Failed to send OTP');
             }
@@ -371,7 +372,8 @@ function AuthScreen({ onLogin, onAdminLogin, initialMode = 'tourist' }) {
             const data = await res.json();
             if (data.success) {
                 setAdminStep('otp');
-                alert('Admin OTP sent to your email!');
+                const notice = data.debugOtp ? `\n(Test OTP: ${data.debugOtp})` : '';
+                alert(`Admin OTP sent to your email!${notice}`);
             } else {
                 alert(data.error || 'Failed to send OTP. Ensure email matches ADMIN_EMAIL.');
             }
