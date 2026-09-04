@@ -818,8 +818,8 @@ function TouristDashboard({ user, logout }) {
                 { height: '360px', width: '100%' }
             } >
             <
-            TileLayer url = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-            attribution = '&copy; OSM' / > {
+            TileLayer url = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution = '&copy; OpenStreetMap contributors' / > {
                 currentLocation && ( <
                     Marker position = {
                         [currentLocation.lat, currentLocation.lng]
@@ -1166,7 +1166,8 @@ function AdminDashboard({ user, logout }) {
             { height: '380px', width: '100%' }
         } >
         <
-        TileLayer url = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" / > {
+        TileLayer url = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution = '&copy; OpenStreetMap contributors' / > {
             Array.isArray(users) && users.map((u) =>
                 u.lastLocation && ( <
                     Marker key = { u.id || u._id }
