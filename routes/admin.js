@@ -77,14 +77,16 @@ router.get('/users', auth, async(req, res) => {
     const users = await User.find({}, '-password -encryptedName -encryptedEmail -encryptedPhone -blockchainHash');
     const usersWithLocation = await Promise.all(users.map(async(user) => {
         const latestAlert = await Alert.findOne({ touristId: user.id }).sort({ createdAt: -1 });
+        const loc = (user.lastLocation && user.lastLocation.lat) ? user.lastLocation : (latestAlert ? latestAlert.location : null);
+        const locTime = user.lastLocationTime || (latestAlert ? latestAlert.createdAt : null);
         return {
             id: user.id,
             name: user.name,
             email: user.email,
             phone: user.phone,
             role: user.role,
-            lastLocation: latestAlert ? latestAlert.location : null,
-            lastAlertTime: latestAlert ? latestAlert.createdAt : null,
+            lastLocation: loc,
+            lastAlertTime: locTime,
         };
     }));
     res.json(usersWithLocation);

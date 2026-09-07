@@ -71,11 +71,21 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/history', require('./routes/history'));
 
 // 5. Real-Time Location Sharing via Socket.io
+const User = require('./models/User');
+
 io.on('connection', (socket) => {
     console.log(`📡 New client connected: ${socket.id}`);
 
-    socket.on('sendLocation', (data) => {
+    socket.on('sendLocation', async (data) => {
         socket.broadcast.emit('receiveLocation', data);
+        if (data.userId && data.lat && data.lng) {
+            try {
+                await User.findByIdAndUpdate(data.userId, {
+                    lastLocation: { lat: data.lat, lng: data.lng },
+                    lastLocationTime: new Date()
+                });
+            } catch (e) {}
+        }
     });
 
     socket.on('disconnect', () => {

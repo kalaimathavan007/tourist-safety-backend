@@ -7,6 +7,11 @@ const userSchema = new mongoose.Schema({
     role: { type: String, enum: ['tourist', 'admin'], default: 'tourist' },
     phone: { type: String },
     emergencyContact: { type: String },
+    lastLocation: {
+        lat: Number,
+        lng: Number
+    },
+    lastLocationTime: { type: Date, default: Date.now },
     // Blockchain identity fields (encrypted)
     encryptedName: String,
     encryptedEmail: String,
