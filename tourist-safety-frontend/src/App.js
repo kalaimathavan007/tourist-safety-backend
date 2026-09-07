@@ -597,6 +597,40 @@ function TouristDashboard({ user, logout }) {
     const [language, setLanguage] = useState('en');
     const [blockchainHash, setBlockchainHash] = useState('');
     const [identity, setIdentity] = useState(null);
+    const [weatherData, setWeatherData] = useState(null);
+
+    // Fetch Real-time Live Weather automatically based on Tourist GPS Location
+    useEffect(() => {
+        if (!currentLocation) return;
+        const lat = currentLocation.lat;
+        const lng = currentLocation.lng;
+        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`)
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.current_weather) {
+                    const temp = Math.round(data.current_weather.temperature);
+                    const code = data.current_weather.weathercode;
+                    const wind = data.current_weather.windspeed;
+
+                    let condition = 'Clear Sky ☀️';
+                    let isRain = false;
+
+                    if (code >= 51 && code <= 67) { condition = 'Drizzle / Light Rain 🌧️'; isRain = true; }
+                    else if (code >= 71 && code <= 86) { condition = 'Monsoon Rain / Snow 🌧️'; isRain = true; }
+                    else if (code >= 95) { condition = 'Heavy Thunderstorm ⚡🌧️'; isRain = true; }
+                    else if (code >= 1 && code <= 3) { condition = 'Partly Cloudy ⛅'; }
+
+                    setWeatherData({
+                        temp,
+                        condition,
+                        wind,
+                        isRain,
+                        advice: isRain ? '⚠️ Monsoon Alert: Slippery trails at waterfalls. Avoid steep rocks.' : '🟢 Good weather for sightseeing and trekking.'
+                    });
+                }
+            })
+            .catch(err => console.error("Weather fetch error:", err));
+    }, [currentLocation]);
 
     // Initial Zones Fetch with Array Check
     useEffect(() => {
@@ -871,9 +905,13 @@ function TouristDashboard({ user, logout }) {
                     <div className="hover-card fade-in" style={{ background: 'linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)', color: '#1e3c72', padding: '12px 18px', marginBottom: '12px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
-                                <h3 style={{ margin: 0, fontSize: '1rem' }}>🌤️ Live Weather & Monsoon Alert</h3>
-                                <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', fontWeight: 'bold' }}>Munnar / Kerala: 22°C - Monsoon Rain Warning 🌧️</p>
-                                <p style={{ margin: '2px 0 0 0', fontSize: '0.75rem', opacity: 0.9 }}>⚠️ High slippery rock risk at waterfalls. Stay on guided trails.</p>
+                                <h3 style={{ margin: 0, fontSize: '1rem' }}>🌤️ Live GPS Weather Monitoring</h3>
+                                <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', fontWeight: 'bold' }}>
+                                    {weatherData ? `Temp: ${weatherData.temp}°C | ${weatherData.condition}` : 'Munnar / Kerala: 22°C - Monsoon Rain Warning 🌧️'}
+                                </p>
+                                <p style={{ margin: '2px 0 0 0', fontSize: '0.75rem', opacity: 0.9 }}>
+                                    {weatherData ? weatherData.advice : '⚠️ High slippery rock risk at waterfalls. Stay on guided trails.'}
+                                </p>
                             </div>
                             <button onClick={playVoiceStatus} className="action-btn" style={{ background: '#1e3c72', padding: '6px 12px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
                                 🔊 Voice Safety Status
