@@ -568,7 +568,7 @@ function TouristDashboard({ user, logout }) {
         const watchId = navigator.geolocation.watchPosition(
             (pos) => {
                 const coords = {
-                    userId: user ? user.id : 'guest',
+                    userId: user ? (user.id || user._id) : 'guest',
                     name: user ? user.name : 'Tourist',
                     lat: pos.coords.latitude,
                     lng: pos.coords.longitude
@@ -576,7 +576,8 @@ function TouristDashboard({ user, logout }) {
                 setCurrentLocation({ lat: coords.lat, lng: coords.lng });
                 socket.emit('sendLocation', coords);
             },
-            (err) => console.log('Location watch error:', err), { enableHighAccuracy: true, maximumAge: 5000 }
+            (err) => console.log('Location watch error:', err),
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
 
         return () => {
