@@ -598,6 +598,7 @@ function TouristDashboard({ user, logout }) {
     const [blockchainHash, setBlockchainHash] = useState('');
     const [identity, setIdentity] = useState(null);
     const [weatherData, setWeatherData] = useState(null);
+    const [lastAnomalyTime, setLastAnomalyTime] = useState(0);
 
     // Fetch Real-time Live Weather automatically based on Tourist GPS Location
     useEffect(() => {
@@ -685,6 +686,9 @@ function TouristDashboard({ user, logout }) {
     };
 
     const sendLocationForAnomaly = async(lat, lng) => {
+        // 30 Minutes Cooldown (30 * 60 * 1000 = 1800000 ms)
+        if (Date.now() - lastAnomalyTime < 1800000) return;
+
         try {
             const res = await fetch(`${BACKEND_URL}/api/ai/anomaly`, {
                 method: 'POST',
@@ -692,7 +696,10 @@ function TouristDashboard({ user, logout }) {
                 body: JSON.stringify({ lat, lng })
             });
             const data = await res.json();
-            if (data.anomaly) alert(`🤖 Thozhan Alert: ${data.message}`);
+            if (data.anomaly) {
+                alert(`🤖 Thozhan Movement Alert: ${data.message}`);
+                setLastAnomalyTime(Date.now());
+            }
         } catch {}
     };
 
