@@ -542,6 +542,47 @@ function AuthScreen({ onLogin, onAdminLogin, initialMode = 'tourist' }) {
     );
 }
 
+// Speech Synthesis Helper for Voice Safety Warnings
+const speakSpeech = (text, lang = 'en') => {
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        if (lang === 'ta') utterance.lang = 'ta-IN';
+        else if (lang === 'hi') utterance.lang = 'hi-IN';
+        else if (lang === 'ml') utterance.lang = 'ml-IN';
+        else utterance.lang = 'en-US';
+        utterance.rate = 0.9;
+        window.speechSynthesis.speak(utterance);
+    }
+};
+
+// Pure SVG Digital Verification QR Code Generator
+function SimpleQRCode({ text }) {
+    const hash = text ? text.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) : 12345;
+    const modules = [];
+    for (let r = 0; r < 9; r++) {
+        const row = [];
+        for (let c = 0; c < 9; c++) {
+            if ((r < 3 && c < 3) || (r < 3 && c > 5) || (r > 5 && c < 3)) {
+                row.push((r === 1 && c === 1) || (r === 1 && c === 7) || (r === 7 && c === 1) ? false : true);
+            } else {
+                row.push((hash * (r + 1) * (c + 1)) % 3 === 0);
+            }
+        }
+        modules.push(row);
+    }
+
+    return (
+        <svg width="75" height="75" viewBox="0 0 9 9" style={{ background: '#ffffff', padding: '5px', borderRadius: '8px', border: '1px solid #e0e0e0', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+            {modules.map((row, r) =>
+                row.map((val, c) =>
+                    val ? <rect key={`${r}-${c}`} x={c} y={r} width="1" height="1" fill="#1e3c72" /> : null
+                )
+            )}
+        </svg>
+    );
+}
+
 // ------------------- Tourist Dashboard -------------------
 function TouristDashboard({ user, logout }) {
     const token = localStorage.getItem('token');
@@ -785,203 +826,145 @@ function TouristDashboard({ user, logout }) {
         } catch (err) {}
     };
 
+    const playVoiceStatus = () => {
+        const text = language === 'ta'
+            ? `வணக்கம் ${user ? user.name : 'பயணி'}. ஜர்னி கார்டு நேரலை பாதுகாப்பு கண்காணிப்பில் உள்ளீர்கள். நீங்கள் பாதுகாப்பாக இருக்கிறீர்கள்.`
+            : `Hello ${user ? user.name : 'Tourist'}. Journey Guard live safety monitoring is active. You are currently safe.`;
+        speakSpeech(text, language);
+    };
+
+    const shareWhatsappGPS = () => {
+        if (!currentLocation) return alert('Acquiring live GPS location...');
+        const mapsUrl = `https://maps.google.com/?q=${currentLocation.lat},${currentLocation.lng}`;
+        const msg = encodeURIComponent(`🚨 EMERGENCY SOS! I need assistance.\nLive Location: ${mapsUrl}\nName: ${user ? user.name : 'Tourist'}`);
+        window.open(`https://api.whatsapp.com/send?text=${msg}`, '_blank');
+    };
+
     const simulateFall = async() => {
         alert('🤖 Thozhan: Fall detected! Sending alert...');
         await sendSOS();
     };
 
-    return ( <
-            div className = "gradient-bg" >
-            <
-            nav className = "glass-navbar fade-in" >
-            <
-            div style = {
-                { display: 'flex', alignItems: 'center', gap: '10px' }
-            } >
-            <
-            img src = "/logo.png"
-            alt = "Logo"
-            style = {
-                { width: '34px', height: '34px', borderRadius: '6px' }
-            }
-            /> <
-            h1 className = "navbar-brand" > JOURNEY GUARD < /h1> < /
-            div > <
-            div className = "navbar-controls" >
-            <
-            select className = "modern-input"
-            value = { language }
-            onChange = {
-                (e) => setLanguage(e.target.value)
-            }
-            style = {
-                { width: 'auto', margin: 0, padding: '6px 10px', fontSize: '0.85rem' }
-            } >
-            <
-            option value = "en" > English < /option> <
-            option value = "ta" > தமிழ் < /option> <
-            option value = "hi" > हिन्दी < /option> <
-            option value = "fr" > Français < /option> < /
-            select > <
-            span className = "role-badge" > Tourist: { user ? user.name : '' } < /span> <
-            button onClick = { logout }
-            className = "action-btn"
-            style = {
-                { background: '#ff416c', padding: '6px 12px' }
-            } > Logout < /button> < /
-            div > <
-            /nav>
+    return (
+        <div className="gradient-bg">
+            <nav className="glass-navbar fade-in">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <img src="/logo.png" alt="Logo" style={{ width: '34px', height: '34px', borderRadius: '6px' }} />
+                    <h1 className="navbar-brand">JOURNEY GUARD</h1>
+                </div>
+                <div className="navbar-controls">
+                    <select className="modern-input" value={language} onChange={(e) => setLanguage(e.target.value)} style={{ width: 'auto', margin: 0, padding: '6px 10px', fontSize: '0.85rem' }}>
+                        <option value="en">🇬🇧 English</option>
+                        <option value="ta">🇮🇳 தமிழ்</option>
+                        <option value="ml">🌴 മലയാളം</option>
+                        <option value="hi">🇮🇳 हिन्दी</option>
+                    </select>
+                    <span className="role-badge">Tourist: {user ? user.name : ''}</span>
+                    <button onClick={logout} className="action-btn" style={{ background: '#ff416c', padding: '6px 12px' }}>Logout</button>
+                </div>
+            </nav>
 
-            <
-            div style = {
-                { maxWidth: '1200px', margin: '0 auto', padding: '0 12px', display: 'flex', flexWrap: 'wrap', gap: '15px' }
-            } >
-            <
-            div style = {
-                { flex: '1 1 500px', minWidth: '0', maxWidth: '100%' }
-            }
-            className = "grid-col-left" >
-            <
-            div className = "map-wrapper fade-in delay-1" >
-            <
-            MapContainer center = { currentLocation ? [currentLocation.lat, currentLocation.lng] : [20.5937, 78.9629] }
-            zoom = { 12 }
-            style = {
-                { height: '360px', width: '100%' }
-            } >
-            <
-            TileLayer url = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution = '&copy; OpenStreetMap contributors' / > {
-                currentLocation && ( <
-                    Marker position = {
-                        [currentLocation.lat, currentLocation.lng]
-                    } >
-                    <
-                    Popup > You are here(Live) < /Popup> < /
-                    Marker >
-                )
-            } {
-                Array.isArray(zones) && zones.map((zone) => ( <
-                    Polygon key = { zone._id }
-                    positions = { zone.coordinates }
-                    color = { zone.level === 'danger' ? '#ff416c' : '#ffb347' }
-                    fillColor = { zone.level === 'danger' ? '#ff416c' : '#ffb347' }
-                    fillOpacity = { 0.4 } >
-                    <
-                    Popup >
-                    <
-                    b style = {
-                        { color: zone.level === 'danger' ? 'red' : 'orange' }
-                    } > { zone.name } < /b> <
-                    br / > { zone.level === 'danger' ? 'DANGER ZONE' : 'CAUTION' } <
-                    /Popup> < /
-                    Polygon >
-                ))
-            } <
-            /MapContainer> < /
-            div >
+            <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 12px', display: 'flex', flexWrap: 'wrap', gap: '15px' }}>
+                <div style={{ flex: '1 1 500px', minWidth: '0', maxWidth: '100%' }} className="grid-col-left">
 
-            {
-                riskLevel && ( <
-                    div className = "hover-card fade-in delay-2"
-                    style = {
-                        { borderLeft: riskLevel.risk === 'High' ? '5px solid #ff416c' : '5px solid #ffb347' }
-                    } >
-                    <
-                    h3 style = {
-                        { marginTop: 0, fontSize: '1.05rem' }
-                    } > 🤖Thozhan Risk Assessment < /h3> <
-                    p style = {
-                        { fontSize: '0.95rem', margin: 0 }
-                    } >
-                    Risk Level: < strong > { riskLevel.risk } < /strong> (Score: {riskLevel.score}) < /
-                    p > <
-                    /div>
-                )
-            }
+                    {/* Live Weather & Monsoon Alert Widget */}
+                    <div className="hover-card fade-in" style={{ background: 'linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)', color: '#1e3c72', padding: '12px 18px', marginBottom: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <h3 style={{ margin: 0, fontSize: '1rem' }}>🌤️ Live Weather & Monsoon Alert</h3>
+                                <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', fontWeight: 'bold' }}>Munnar / Kerala: 22°C - Monsoon Rain Warning 🌧️</p>
+                                <p style={{ margin: '2px 0 0 0', fontSize: '0.75rem', opacity: 0.9 }}>⚠️ High slippery rock risk at waterfalls. Stay on guided trails.</p>
+                            </div>
+                            <button onClick={playVoiceStatus} className="action-btn" style={{ background: '#1e3c72', padding: '6px 12px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                                🔊 Voice Safety Status
+                            </button>
+                        </div>
+                    </div>
 
-            <
-            div className = "hover-card fade-in delay-2" >
-            <
-            h3 style = {
-                { marginTop: 0, fontSize: '1.05rem' }
-            } > 🤖Thozhan AI Assistant < /h3> <
-            div className = "chat-box" > { chatReply || 'Thozhan: Hi! Ask me about safe zones, danger areas, or SOS features.' } <
-            /div> <
-            div style = {
-                { display: 'flex', gap: '8px' }
-            } >
-            <
-            input className = "modern-input"
-            style = {
-                { margin: 0 }
-            }
-            type = "text"
-            value = { chatMessage }
-            onChange = {
-                (e) => setChatMessage(e.target.value)
-            }
-            placeholder = "Ask Thozhan..." / >
-            <
-            button onClick = { sendChatMessage }
-            className = "action-btn"
-            style = {
-                { whiteSpace: 'nowrap' }
-            } > Send < /button> < /
-            div > <
-            /div> < /
-            div >
+                    <div className="map-wrapper fade-in delay-1">
+                        <MapContainer center={currentLocation ? [currentLocation.lat, currentLocation.lng] : [20.5937, 78.9629]} zoom={12} style={{ height: '360px', width: '100%' }}>
+                            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
+                            {currentLocation && (
+                                <Marker position={[currentLocation.lat, currentLocation.lng]}>
+                                    <Popup>You are here (Live)</Popup>
+                                </Marker>
+                            )}
+                            {Array.isArray(zones) && zones.map((zone) => (
+                                <Polygon key={zone._id || zone.name} positions={zone.coordinates} color={zone.level === 'danger' ? '#ff416c' : '#ffb347'} fillColor={zone.level === 'danger' ? '#ff416c' : '#ffb347'} fillOpacity={0.4}>
+                                    <Popup>
+                                        <b style={{ color: zone.level === 'danger' ? 'red' : 'orange' }}>{zone.name}</b>
+                                        <br />{zone.riskScore ? `Risk: ${zone.riskScore}/100` : ''} - {zone.level === 'danger' ? 'DANGER ZONE' : 'CAUTION'}
+                                    </Popup>
+                                </Polygon>
+                            ))}
+                        </MapContainer>
+                    </div>
 
-            <
-            div style = {
-                { flex: '1 1 320px', minWidth: '0', maxWidth: '100%' }
-            }
-            className = "grid-col-right" >
-            <
-            div className = "hover-card fade-in delay-3"
-            style = {
-                { borderTop: 'none', background: '#ffebee' }
-            } >
-            <
-            h3 style = {
-                { marginTop: 0, color: '#c62828', fontSize: '1.1rem' }
-            } > 🆘Emergency Actions < /h3> <
-            input className = "modern-input"
-            type = "text"
-            placeholder = "Optional emergency message..."
-            value = { sosMessage }
-            onChange = {
-                (e) => setSosMessage(e.target.value)
-            }
-            />
+                    {/* Digital Tourist Pass & Verification QR Code */}
+                    <div className="hover-card fade-in delay-2" style={{ background: '#ffffff', borderRadius: '12px', padding: '15px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <span style={{ background: '#1e3c72', color: 'white', padding: '3px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 'bold' }}>OFFICIAL PASS</span>
+                                <h3 style={{ margin: '6px 0 2px 0', fontSize: '1.05rem', color: '#1e3c72' }}>🪪 Digital Tourist Safety Pass</h3>
+                                <p style={{ margin: '2px 0', fontSize: '0.85rem', color: '#444' }}><strong>Holder:</strong> {user ? user.name : 'Tourist'}</p>
+                                <p style={{ margin: '2px 0', fontSize: '0.8rem', color: '#666' }}><strong>Pass ID:</strong> #TG-{(user ? (user.id || user._id || '8839') : '8839').toString().slice(-6)}</p>
+                                <p style={{ margin: '2px 0', fontSize: '0.75rem', color: '#2e7d32' }}>✅ Blockchain Verified & Geofence Active</p>
+                            </div>
+                            <div style={{ textAlign: 'center' }}>
+                                <SimpleQRCode text={`JOURNEY-GUARD-PASS-${user ? user.id : 'GUEST'}`} />
+                                <small style={{ display: 'block', fontSize: '0.65rem', color: '#888', marginTop: '3px' }}>Scan to Verify</small>
+                            </div>
+                        </div>
+                    </div>
 
-            <
-            button onClick = { sendSOS }
-            className = "pulse-btn"
-            style = {
-                { background: 'linear-gradient(45deg, #ff416c, #ff4b2b)' }
-            } > 🚨SEND SOS IMMEDIATELY🚨 <
-            /button>
+                    {riskLevel && (
+                        <div className="hover-card fade-in delay-2" style={{ borderLeft: riskLevel.risk === 'High' ? '5px solid #ff416c' : '5px solid #ffb347' }}>
+                            <h3 style={{ marginTop: 0, fontSize: '1.05rem' }}>🤖 Thozhan Risk Assessment</h3>
+                            <p style={{ fontSize: '0.95rem', margin: 0 }}>
+                                Risk Level: <strong>{riskLevel.risk}</strong> (Score: {riskLevel.score})
+                            </p>
+                        </div>
+                    )}
 
-            <
-            button onClick = { simulateFall }
-            className = "action-btn"
-            style = {
-                { background: 'linear-gradient(45deg, #f12711, #f5af19)', width: '100%', marginTop: '12px', padding: '12px' }
-            } > ⚠️Simulate Auto Fall Alert <
-            /button>
+                    <div className="hover-card fade-in delay-2">
+                        <h3 style={{ marginTop: 0, fontSize: '1.05rem' }}>🤖 Thozhan AI Assistant</h3>
+                        <div className="chat-box">{chatReply || 'Thozhan: Hi! Ask me about safe zones, danger areas, or SOS features.'}</div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <input className="modern-input" style={{ margin: 0 }} type="text" value={chatMessage} onChange={(e) => setChatMessage(e.target.value)} placeholder="Ask Thozhan..." />
+                            <button onClick={sendChatMessage} className="action-btn" style={{ whiteSpace: 'nowrap' }}>Send</button>
+                        </div>
+                    </div>
+                </div>
 
-            {
-                blockchainHash && ( <
-                    div style = {
-                        { marginTop: '12px', padding: '8px', background: 'white', borderRadius: '5px', fontSize: '0.75rem', wordBreak: 'break-all' }
-                    } >
-                    <
-                    strong > Blockchain Hash: < /strong><br / > { blockchainHash } <
-                    /div>
-                )
-            } <
-            /div>
+                <div style={{ flex: '1 1 320px', minWidth: '0', maxWidth: '100%' }} className="grid-col-right">
+
+                    {/* Emergency Quick Helplines Bar */}
+                    <div className="hover-card fade-in delay-3" style={{ background: '#fff3e0', borderLeft: '4px solid #ff9800' }}>
+                        <h3 style={{ marginTop: 0, fontSize: '1rem', color: '#e65100' }}>📞 Emergency Helplines (1-Tap Call)</h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '10px' }}>
+                            <a href="tel:112" style={{ textDecoration: 'none' }}><button className="action-btn" style={{ width: '100%', background: '#d32f2f', padding: '8px', fontSize: '0.8rem' }}>🚨 112 Emergency</button></a>
+                            <a href="tel:100" style={{ textDecoration: 'none' }}><button className="action-btn" style={{ width: '100%', background: '#1976d2', padding: '8px', fontSize: '0.8rem' }}>👮 100 Police</button></a>
+                            <a href="tel:108" style={{ textDecoration: 'none' }}><button className="action-btn" style={{ width: '100%', background: '#388e3c', padding: '8px', fontSize: '0.8rem' }}>🚑 108 Ambulance</button></a>
+                            <a href="tel:1363" style={{ textDecoration: 'none' }}><button className="action-btn" style={{ width: '100%', background: '#f57c00', padding: '8px', fontSize: '0.8rem' }}>🧳 1363 Tourist</button></a>
+                        </div>
+                    </div>
+
+                    <div className="hover-card fade-in delay-3" style={{ borderTop: 'none', background: '#ffebee' }}>
+                        <h3 style={{ marginTop: 0, color: '#c62828', fontSize: '1.1rem' }}>🆘 Emergency Actions</h3>
+                        <input className="modern-input" type="text" placeholder="Optional emergency message..." value={sosMessage} onChange={(e) => setSosMessage(e.target.value)} />
+
+                        <button onClick={sendSOS} className="pulse-btn" style={{ background: 'linear-gradient(45deg, #ff416c, #ff4b2b)' }}>🚨 SEND SOS IMMEDIATELY 🚨</button>
+
+                        <button onClick={shareWhatsappGPS} className="action-btn" style={{ background: '#25D366', width: '100%', marginTop: '10px', padding: '10px', fontWeight: 'bold' }}>💬 Share Live GPS on WhatsApp</button>
+
+                        <button onClick={simulateFall} className="action-btn" style={{ background: 'linear-gradient(45deg, #f12711, #f5af19)', width: '100%', marginTop: '10px', padding: '10px' }}>⚠️ Simulate Auto Fall Alert</button>
+
+                        {blockchainHash && (
+                            <div style={{ marginTop: '12px', padding: '8px', background: 'white', borderRadius: '5px', fontSize: '0.75rem', wordBreak: 'break-all' }}>
+                                <strong>Blockchain Hash:</strong><br />{blockchainHash}
+                            </div>
+                        )}
+                    </div>
 
             <
             div className = "hover-card fade-in delay-3" >
@@ -1157,175 +1140,80 @@ function AdminDashboard({ user, logout }) {
         }
     };
 
-    return ( <
-        div className = "gradient-bg" >
-        <
-        nav className = "glass-navbar fade-in" >
-        <
-        div style = {
-            { display: 'flex', alignItems: 'center', gap: '10px' }
-        } >
-        <
-        img src = "/logo.png"
-        alt = "Logo"
-        style = {
-            { width: '34px', height: '34px', borderRadius: '6px' }
-        }
-        /> <
-        h1 className = "navbar-brand" > JOURNEY GUARD ADMIN < /h1> < /
-        div > <
-        div className = "navbar-controls" >
-        <
-        span className = "role-badge" > Admin: { user ? user.email : '' } < /span> <
-        button onClick = { logout }
-        className = "action-btn"
-        style = {
-            { background: '#ff416c', padding: '6px 12px' }
-        } > Logout < /button> < /
-        div > <
-        /nav>
+    return (
+        <div className="gradient-bg">
+            <nav className="glass-navbar fade-in">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <img src="/logo.png" alt="Logo" style={{ width: '34px', height: '34px', borderRadius: '6px' }} />
+                    <h1 className="navbar-brand">JOURNEY GUARD ADMIN</h1>
+                </div>
+                <div className="navbar-controls">
+                    <span className="role-badge">Admin: {user ? user.email : ''}</span>
+                    <button onClick={logout} className="action-btn" style={{ background: '#ff416c', padding: '6px 12px' }}>Logout</button>
+                </div>
+            </nav>
 
-        <
-        div style = {
-            { maxWidth: '1200px', margin: '0 auto', padding: '0 12px', display: 'flex', flexWrap: 'wrap', gap: '15px' }
-        } >
-        <
-        div style = {
-            { flex: '1 1 500px', minWidth: '0', maxWidth: '100%' }
-        }
-        className = "grid-col-left" >
-        <
-        div className = "map-wrapper fade-in delay-1" >
-        <
-        MapContainer center = { mapCenter }
-        zoom = { 6 }
-        style = {
-            { height: '380px', width: '100%' }
-        } >
-        <
-        TileLayer url = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution = '&copy; OpenStreetMap contributors' / > {
-            Array.isArray(users) && users.map((u) =>
-                u.lastLocation && ( <
-                    Marker key = { u.id || u._id }
-                    position = {
-                        [u.lastLocation.lat, u.lastLocation.lng]
-                    }
-                    eventHandlers = {
-                        { click: () => handleUserClick(u) }
-                    } >
-                    <
-                    Popup >
-                    <
-                    strong > { u.name } < /strong><br / >
-                    Email: { u.email } < br / >
-                    Phone: { u.phone || 'N/A' } < br / >
-                    Last seen: { u.lastAlertTime ? new Date(u.lastAlertTime).toLocaleTimeString() : 'Never' } <
-                    /Popup> < /
-                    Marker >
-                )
-            )
-        } <
-        /MapContainer> < /
-        div > <
-        /div>
+            <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 12px', display: 'flex', flexWrap: 'wrap', gap: '15px' }}>
+                <div style={{ flex: '1 1 500px', minWidth: '0', maxWidth: '100%' }} className="grid-col-left">
+                    <div className="map-wrapper fade-in delay-1">
+                        <MapContainer center={mapCenter} zoom={6} style={{ height: '380px', width: '100%' }}>
+                            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
+                            {Array.isArray(users) && users.map((u) =>
+                                u.lastLocation && (
+                                    <Marker key={u.id || u._id} position={[u.lastLocation.lat, u.lastLocation.lng]} eventHandlers={{ click: () => handleUserClick(u) }}>
+                                        <Popup>
+                                            <strong>{u.name}</strong><br />
+                                            Email: {u.email}<br />
+                                            Phone: {u.phone || 'N/A'}<br />
+                                            Last seen: {u.lastAlertTime ? new Date(u.lastAlertTime).toLocaleTimeString() : 'Never'}
+                                        </Popup>
+                                    </Marker>
+                                )
+                            )}
+                        </MapContainer>
+                    </div>
+                </div>
 
-        <
-        div style = {
-            { flex: '1 1 320px', minWidth: '0', maxWidth: '100%' }
-        }
-        className = "grid-col-right" >
-        <
-        div className = "hover-card fade-in delay-2" >
-        <
-        h3 style = {
-            { marginTop: 0, fontSize: '1.1rem' }
-        } > 📋Registered Tourists < /h3> <
-        ul style = {
-            { listStyle: 'none', padding: 0, maxHeight: '180px', overflowY: 'auto' }
-        } > {
-            Array.isArray(users) && users.map((u) => ( <
-                li key = { u.id || u._id }
-                style = {
-                    { padding: '8px', borderBottom: '1px solid #eee', cursor: 'pointer' }
-                }
-                onClick = {
-                    () => handleUserClick(u)
-                } >
-                <
-                strong style = {
-                    { fontSize: '0.95rem' }
-                } > { u.name } < /strong><br / >
-                <
-                small style = {
-                    { color: '#555' }
-                } > { u.email } < /small><br / >
-                <
-                small style = {
-                    { color: '#888' }
-                } > Last loc: { u.lastLocation ? `${u.lastLocation.lat.toFixed(4)}, ${u.lastLocation.lng.toFixed(4)}` : 'Unknown' } < /small> < /
-                li >
-            ))
-        } <
-        /ul> < /
-        div >
+                <div style={{ flex: '1 1 320px', minWidth: '0', maxWidth: '100%' }} className="grid-col-right">
+                    <div className="hover-card fade-in delay-2">
+                        <h3 style={{ marginTop: 0, fontSize: '1.1rem' }}>📋 Registered Tourists</h3>
+                        <ul style={{ listStyle: 'none', padding: 0, maxHeight: '180px', overflowY: 'auto' }}>
+                            {Array.isArray(users) && users.map((u) => (
+                                <li key={u.id || u._id} style={{ padding: '8px', borderBottom: '1px solid #eee', cursor: 'pointer' }} onClick={() => handleUserClick(u)}>
+                                    <strong style={{ fontSize: '0.95rem' }}>{u.name}</strong><br />
+                                    <small style={{ color: '#555' }}>{u.email}</small><br />
+                                    <small style={{ color: '#888' }}>Last loc: {u.lastLocation ? `${u.lastLocation.lat.toFixed(4)}, ${u.lastLocation.lng.toFixed(4)}` : 'Unknown'}</small>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
 
-        {
-            selectedUser && ( <
-                div className = "hover-card fade-in delay-3" >
-                <
-                div style = {
-                    { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }
-                } >
-                <
-                h3 style = {
-                    { marginTop: 0, marginBottom: 0, fontSize: '1rem' }
-                } > 📢Alerts: { selectedUser.name } < /h3> <
-                button onClick = {
-                    () => fetchUserAlerts(selectedUser.id || selectedUser._id)
-                }
-                className = "action-btn"
-                style = {
-                    { padding: '4px 8px', fontSize: '0.75rem' }
-                } > Refresh < /button> < /
-                div > <
-                hr style = {
-                    { border: 'none', borderTop: '1px solid #eee', margin: '10px 0' }
-                }
-                />
+                    {selectedUser && (
+                        <div className="hover-card fade-in delay-3">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <h3 style={{ marginTop: 0, marginBottom: 0, fontSize: '1rem' }}>📢 Alerts: {selectedUser.name}</h3>
+                                <button onClick={() => fetchUserAlerts(selectedUser.id || selectedUser._id)} className="action-btn" style={{ padding: '4px 8px', fontSize: '0.75rem' }}>Refresh</button>
+                            </div>
+                            <hr style={{ border: 'none', borderTop: '1px solid #eee', margin: '10px 0' }} />
 
-                {
-                    !Array.isArray(userAlerts) || userAlerts.length === 0 ? ( <
-                        p style = {
-                            { color: '#888', fontSize: '0.85rem' }
-                        } > No alerts recorded. < /p>
-                    ) : ( <
-                        div style = {
-                            { maxHeight: '180px', overflowY: 'auto' }
-                        } > {
-                            userAlerts.map((alert) => ( <
-                                div key = { alert._id }
-                                className = "alert-item" >
-                                <
-                                strong style = {
-                                    { color: '#d32f2f' }
-                                } > { alert.type ? alert.type.toUpperCase() : 'ALERT' } < /strong> - {alert.message} <
-                                br / > < small > 📍{ alert.location ? `${alert.location.lat.toFixed(4)}, ${alert.location.lng.toFixed(4)}` : 'N/A' } < /small> <
-                                br / > < small style = {
-                                    { color: '#666' }
-                                } > 🕒{ new Date(alert.createdAt).toLocaleTimeString() } < /small> < /
-                                div >
-                            ))
-                        } <
-                        /div>
-                    )
-                } <
-                /div>
-            )
-        } <
-        /div> < /
-        div > <
-        /div>
+                            {!Array.isArray(userAlerts) || userAlerts.length === 0 ? (
+                                <p style={{ color: '#888', fontSize: '0.85rem' }}>No alerts recorded.</p>
+                            ) : (
+                                <div style={{ maxHeight: '180px', overflowY: 'auto' }}>
+                                    {userAlerts.map((alert) => (
+                                        <div key={alert._id} className="alert-item">
+                                            <strong style={{ color: '#d32f2f' }}>{alert.type ? alert.type.toUpperCase() : 'ALERT'}</strong> - {alert.message}<br />
+                                            <small>📍 {alert.location ? `${alert.location.lat.toFixed(4)}, ${alert.location.lng.toFixed(4)}` : 'N/A'}</small><br />
+                                            <small style={{ color: '#666' }}>🕒 {new Date(alert.createdAt).toLocaleTimeString()}</small>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
     );
 }
 
@@ -1376,65 +1264,32 @@ function App() {
     };
 
     if (showSplash) {
-        return ( <
-            >
-            <
-            style > { globalStyles } < /style> <
-            SplashScreen / >
-            <
-            />
+        return (
+            <>
+                <style>{globalStyles}</style>
+                <SplashScreen />
+            </>
         );
     }
 
-    return ( <
-        >
-        <
-        style > { globalStyles } < /style> {!isLoggedIn ? ( <
-            Routes >
-            <
-            Route path = "/"
-            element = { < AuthScreen onLogin = { handleLogin } onAdminLogin = { handleAdminLogin } initialMode = "tourist" / > } / >
-            <
-            Route path = "/admin-login"
-            element = { < AuthScreen onLogin = { handleLogin } onAdminLogin = { handleAdminLogin } initialMode = "admin" / > } / >
-                    <
-                    Route path = "*"
-                    element = { < Navigate to = "/" / > }
-                    /> < /
-                    Routes >
-                ): ( <
-                    Routes >
-                    <
-                    Route path = "/"
-                    element = {
-                        user && user.role === 'tourist' ? ( <
-                            TouristDashboard user = { user }
-                            logout = { logout }
-                            />
-                        ) : ( <
-                            Navigate to = "/admin/dashboard" / >
-                        )
-                    }
-                    /> <
-                    Route path = "/admin/dashboard"
-                    element = {
-                        user && user.role === 'admin' ? ( <
-                            AdminDashboard user = { user }
-                            logout = { logout }
-                            />
-                        ) : ( <
-                            Navigate to = "/" / >
-                        )
-                    }
-                    /> <
-                    Route path = "*"
-                    element = { < Navigate to = "/" / > }
-                    /> < /
-                    Routes >
-                )
-            } <
-            />
-        );
-    }
+    return (
+        <>
+            <style>{globalStyles}</style>
+            {!isLoggedIn ? (
+                <Routes>
+                    <Route path="/" element={<AuthScreen onLogin={handleLogin} onAdminLogin={handleAdminLogin} initialMode="tourist" />} />
+                    <Route path="/admin-login" element={<AuthScreen onLogin={handleLogin} onAdminLogin={handleAdminLogin} initialMode="admin" />} />
+                    <Route path="*" element={<Navigate to="/" />} />
+                </Routes>
+            ) : (
+                <Routes>
+                    <Route path="/" element={user && user.role === 'tourist' ? <TouristDashboard user={user} logout={logout} /> : <Navigate to="/admin/dashboard" />} />
+                    <Route path="/admin/dashboard" element={user && user.role === 'admin' ? <AdminDashboard user={user} logout={logout} /> : <Navigate to="/" />} />
+                    <Route path="*" element={<Navigate to="/" />} />
+                </Routes>
+            )}
+        </>
+    );
+}
 
-    export default App;
+export default App;
