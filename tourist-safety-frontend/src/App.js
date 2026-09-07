@@ -634,22 +634,33 @@ function TouristDashboard({ user, logout }) {
             const isInside = isPointInZone(currentLocation, zone.coordinates) ||
                 (zone.center && getDistanceInMeters(currentLocation.lat, currentLocation.lng, zone.center.lat, zone.center.lng) <= 800);
 
+            const key = zone._id || zone.name;
+
             if (isInside) {
-                const key = zone._id || zone.name;
-                if (lastAlertShown[key] && Date.now() - lastAlertShown[key] < 60000) return;
+                // Show notification EXACTLY ONCE per visit to avoid annoying the user
+                if (lastAlertShown[key]) return;
 
                 const scoreText = zone.riskScore ? `\n• Risk Score: ${zone.riskScore}/100 [${zone.riskLevel || 'HIGH'}]` : '';
                 const reasonText = zone.reason ? `\n• Risk Reason: ${zone.reason}` : '';
                 const msg = `🚨 GEOFENCE ALERT: You entered ${zone.name}${scoreText}${reasonText}\n\n⚠️ Exercise extra caution in this area!`;
 
                 alert(msg);
-                setLastAlertShown(prev => ({...prev, [key]: Date.now() }));
+                setLastAlertShown(prev => ({ ...prev, [key]: true }));
 
                 fetch(`${BACKEND_URL}/api/alerts`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
                     body: JSON.stringify({ location: currentLocation, type: 'geo_fence', message: msg })
                 }).catch(console.error);
+            } else {
+                // Reset alert status when user leaves the area
+                if (lastAlertShown[key]) {
+                    setLastAlertShown(prev => {
+                        const updated = { ...prev };
+                        delete updated[key];
+                        return updated;
+                    });
+                }
             }
         });
     }, [currentLocation, zones, lastAlertShown, token]);
