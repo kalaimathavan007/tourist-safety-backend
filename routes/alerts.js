@@ -14,9 +14,16 @@ router.post('/', auth, async(req, res) => {
             message
         });
         await alert.save();
+
+        // Emit real-time Socket.io alert to Admin
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('newAlert', alert);
+        }
+
         res.json(alert);
     } catch (err) {
-        console.error(err);
+        console.error('Alert error:', err);
         res.status(500).send('Server error');
     }
 });

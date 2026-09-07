@@ -2,6 +2,13 @@ const mongoose = require('mongoose');
 
 const zoneSchema = new mongoose.Schema({
     name: { type: String, required: true },
+    riskScore: { type: Number, default: 50 },
+    riskLevel: { type: String, default: 'HIGH' },
+    reason: { type: String, required: true },
+    center: {
+        lat: { type: Number, required: true },
+        lng: { type: Number, required: true }
+    },
     coordinates: {
         type: [
             [Number]

@@ -51,6 +51,7 @@ app.use(express.urlencoded({ extended: true }));
 const io = socketIo(server, {
     cors: corsOptions
 });
+app.set('io', io);
 
 // 3. Base Health Check Route
 app.get('/api/health', (req, res) => {

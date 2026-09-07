@@ -232,6 +232,18 @@ const isPointInZone = (point, polygonCoords) => {
     } catch { return false; }
 };
 
+const getDistanceInMeters = (lat1, lon1, lat2, lon2) => {
+    if (!lat1 || !lon1 || !lat2 || !lon2) return 999999;
+    const R = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+};
+
 const GLOBAL_DANGER_ZONES = [{
         _id: "danger_guna_cave",
         name: "Guna Cave (Kodai)",
@@ -619,12 +631,20 @@ function TouristDashboard({ user, logout }) {
     useEffect(() => {
         if (!currentLocation || !Array.isArray(zones)) return;
         zones.forEach(zone => {
-            if (isPointInZone(currentLocation, zone.coordinates)) {
-                const key = zone._id;
+            const isInside = isPointInZone(currentLocation, zone.coordinates) ||
+                (zone.center && getDistanceInMeters(currentLocation.lat, currentLocation.lng, zone.center.lat, zone.center.lng) <= 800);
+
+            if (isInside) {
+                const key = zone._id || zone.name;
                 if (lastAlertShown[key] && Date.now() - lastAlertShown[key] < 60000) return;
-                const msg = zone.level === 'warning' ? `⚠️ CAUTION: ${zone.name}` : `🔴 DANGER: ${zone.name}`;
+
+                const scoreText = zone.riskScore ? `\n• Risk Score: ${zone.riskScore}/100 [${zone.riskLevel || 'HIGH'}]` : '';
+                const reasonText = zone.reason ? `\n• Risk Reason: ${zone.reason}` : '';
+                const msg = `🚨 GEOFENCE ALERT: You entered ${zone.name}${scoreText}${reasonText}\n\n⚠️ Exercise extra caution in this area!`;
+
                 alert(msg);
                 setLastAlertShown(prev => ({...prev, [key]: Date.now() }));
+
                 fetch(`${BACKEND_URL}/api/alerts`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
@@ -1077,6 +1097,11 @@ function AdminDashboard({ user, logout }) {
 
     useEffect(() => {
         const socket = io(BACKEND_URL);
+
+        socket.on('newAlert', (newAlert) => {
+            alert(`🚨 LIVE TOURIST GEOFENCE ALERT!\n\nTourist: ${newAlert.touristName}\n${newAlert.message}`);
+            fetchUsers();
+        });
 
         socket.on('receiveLocation', (data) => {
             setUsers((prevUsers) => {
