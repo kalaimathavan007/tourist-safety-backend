@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Polygon, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Polygon, Marker, Popup, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import io from 'socket.io-client';
 import 'leaflet/dist/leaflet.css';
@@ -624,6 +624,7 @@ function TouristDashboard({ user, logout }) {
     const [chatReply, setChatReply] = useState('');
     const [language, setLanguage] = useState('en');
     const [mapTileStyle, setMapTileStyle] = useState('google_hybrid');
+    const [walkingTrail, setWalkingTrail] = useState([]);
     const [blockchainHash, setBlockchainHash] = useState('');
     const [identity, setIdentity] = useState(null);
     const [weatherData, setWeatherData] = useState(null);
@@ -691,6 +692,7 @@ function TouristDashboard({ user, logout }) {
                     lng: pos.coords.longitude
                 };
                 setCurrentLocation({ lat: coords.lat, lng: coords.lng });
+                setWalkingTrail(prev => [...prev.slice(-40), [coords.lat, coords.lng]]);
                 socket.emit('sendLocation', coords);
             },
             (err) => console.log('Location watch error:', err),
@@ -959,28 +961,24 @@ function TouristDashboard({ user, logout }) {
                         </div>
                     </div>
 
-                    {/* Google Maps Layer Selector & Walking GPS Navigation */}
+                    {/* In-App Google Maps Layer Selector */}
                     <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                        <button type="button" onClick={() => setMapTileStyle('google_hybrid')} className="action-btn" style={{ background: mapTileStyle === 'google_hybrid' ? '#1e3c72' : '#78909c', padding: '5px 10px', fontSize: '0.75rem' }}>
+                        <button type="button" onClick={() => setMapTileStyle('google_hybrid')} className="action-btn" style={{ background: mapTileStyle === 'google_hybrid' ? '#1e3c72' : '#78909c', padding: '6px 12px', fontSize: '0.8rem' }}>
                             🛰️ Google Satellite
                         </button>
-                        <button type="button" onClick={() => setMapTileStyle('google_streets')} className="action-btn" style={{ background: mapTileStyle === 'google_streets' ? '#1e3c72' : '#78909c', padding: '5px 10px', fontSize: '0.75rem' }}>
+                        <button type="button" onClick={() => setMapTileStyle('google_streets')} className="action-btn" style={{ background: mapTileStyle === 'google_streets' ? '#1e3c72' : '#78909c', padding: '6px 12px', fontSize: '0.8rem' }}>
                             🗺️ Google Streets
                         </button>
-                        <button type="button" onClick={() => setMapTileStyle('osm')} className="action-btn" style={{ background: mapTileStyle === 'osm' ? '#1e3c72' : '#78909c', padding: '5px 10px', fontSize: '0.75rem' }}>
+                        <button type="button" onClick={() => setMapTileStyle('osm')} className="action-btn" style={{ background: mapTileStyle === 'osm' ? '#1e3c72' : '#78909c', padding: '6px 12px', fontSize: '0.8rem' }}>
                             🗺️ OSM Map
                         </button>
-                        {currentLocation && (
-                            <a href={`https://www.google.com/maps/dir/?api=1&destination=${currentLocation.lat},${currentLocation.lng}&travelmode=walking`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', marginLeft: 'auto' }}>
-                                <button type="button" className="action-btn" style={{ background: '#34a853', padding: '5px 10px', fontSize: '0.75rem' }}>
-                                    📍 Open Google Maps Walking Nav ➔
-                                </button>
-                            </a>
-                        )}
+                        <span style={{ marginLeft: 'auto', fontSize: '0.75rem', fontWeight: 'bold', color: '#1e3c72', background: '#e3f2fd', padding: '4px 8px', borderRadius: '12px' }}>
+                            🚶 Live In-App Walking GPS Active
+                        </span>
                     </div>
 
                     <div className="map-wrapper fade-in delay-1">
-                        <MapContainer center={currentLocation ? [currentLocation.lat, currentLocation.lng] : [20.5937, 78.9629]} zoom={14} style={{ height: '380px', width: '100%' }}>
+                        <MapContainer center={currentLocation ? [currentLocation.lat, currentLocation.lng] : [20.5937, 78.9629]} zoom={15} style={{ height: '390px', width: '100%' }}>
                             <TileLayer
                                 url={
                                     mapTileStyle === 'google_hybrid'
@@ -989,12 +987,16 @@ function TouristDashboard({ user, logout }) {
                                             ? 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}'
                                             : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
                                 }
-                                attribution="&copy; Google Maps / OpenStreetMap"
+                                attribution="&copy; Google Maps"
                             />
                             {currentLocation && (
                                 <Marker position={[currentLocation.lat, currentLocation.lng]}>
                                     <Popup>You are here (Live Walking GPS)</Popup>
                                 </Marker>
+                            )}
+                            {/* Live In-App Walking Route Polyline */}
+                            {walkingTrail.length > 1 && (
+                                <Polyline positions={walkingTrail} color="#00c3ff" weight={6} opacity={0.9} />
                             )}
                             {Array.isArray(zones) && zones.map((zone) => (
                                 <Polygon key={zone._id || zone.name} positions={zone.coordinates} color={zone.level === 'danger' ? '#ff416c' : '#ffb347'} fillColor={zone.level === 'danger' ? '#ff416c' : '#ffb347'} fillOpacity={0.4}>
