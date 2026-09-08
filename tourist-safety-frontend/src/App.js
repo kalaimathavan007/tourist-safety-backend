@@ -1249,11 +1249,54 @@ function AdminDashboard({ user, logout }) {
         }
     };
 
+    const [userWeather, setUserWeather] = useState(null);
+    const [userZoneRisk, setUserZoneRisk] = useState(null);
+
     const handleUserClick = (u) => {
         setSelectedUser(u);
         fetchUserAlerts(u.id || u._id);
+        setUserWeather(null);
+        setUserZoneRisk(null);
+
         if (u.lastLocation && u.lastLocation.lat) {
             setMapCenter([u.lastLocation.lat, u.lastLocation.lng]);
+
+            // 1. Fetch live weather at tourist's location
+            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${u.lastLocation.lat}&longitude=${u.lastLocation.lng}&current_weather=true`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.current_weather) {
+                        const temp = Math.round(data.current_weather.temperature);
+                        const code = data.current_weather.weathercode;
+                        let condition = 'Clear Sky ☀️';
+                        if (code >= 51 && code <= 67) condition = 'Drizzle / Light Rain 🌧️';
+                        else if (code >= 71 && code <= 86) condition = 'Monsoon Rain 🌧️';
+                        else if (code >= 95) condition = 'Heavy Thunderstorm ⚡';
+                        else if (code >= 1 && code <= 3) condition = 'Partly Cloudy ⛅';
+
+                        setUserWeather({
+                            temp,
+                            condition,
+                            advice: code >= 50 ? '⚠️ Rain / Monsoon Warning at tourist location!' : '🟢 Clear & safe weather at tourist location.'
+                        });
+                    }
+                })
+                .catch(() => {});
+
+            // 2. Check if tourist is in any Geofenced Danger Zone
+            const matchedZone = GLOBAL_DANGER_ZONES.find(z =>
+                isPointInZone(u.lastLocation, z.coordinates) ||
+                (z.center && getDistanceInMeters(u.lastLocation.lat, u.lastLocation.lng, z.center.lat, z.center.lng) <= 800)
+            );
+            if (matchedZone) {
+                setUserZoneRisk(matchedZone);
+            }
+        }
+    };
+
+    const handleSearchKeyDown = (e) => {
+        if (e.key === 'Enter' && filteredUsers.length > 0) {
+            handleUserClick(filteredUsers[0]);
         }
     };
 
@@ -1272,6 +1315,55 @@ function AdminDashboard({ user, logout }) {
 
             <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 12px', display: 'flex', flexWrap: 'wrap', gap: '15px' }}>
                 <div style={{ flex: '1 1 500px', minWidth: '0', maxWidth: '100%' }} className="grid-col-left">
+
+                    {/* Live Selected Tourist Intelligence Card (Location + Place Risk + Weather) */}
+                    {selectedUser && (
+                        <div className="hover-card fade-in delay-1" style={{ background: '#ffffff', borderRadius: '12px', padding: '12px 16px', marginBottom: '10px', borderTop: '4px solid #1e3c72' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                                <div>
+                                    <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#1e3c72' }}>🎯 Live Monitoring: {selectedUser.name}</h3>
+                                    <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: '#555' }}>📧 {selectedUser.email} | 📞 {selectedUser.phone || 'N/A'}</p>
+                                </div>
+                                <span style={{ background: selectedUser.lastLocation ? '#e8f5e9' : '#ffebee', color: selectedUser.lastLocation ? '#2e7d32' : '#c62828', padding: '3px 8px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                                    {selectedUser.lastLocation ? '🟢 LIVE GPS ACTIVE' : '🔴 NO GPS'}
+                                </span>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px', marginTop: '8px' }}>
+                                {/* Location Risk Assessment */}
+                                <div style={{ background: userZoneRisk ? '#ffebee' : '#e8f5e9', padding: '8px 10px', borderRadius: '8px', borderLeft: userZoneRisk ? '4px solid #d32f2f' : '4px solid #2e7d32' }}>
+                                    <strong style={{ fontSize: '0.8rem', color: userZoneRisk ? '#c62828' : '#2e7d32' }}>
+                                        {userZoneRisk ? `🚨 Danger Zone: ${userZoneRisk.name}` : '🟢 Location: Safe Tourist Area'}
+                                    </strong>
+                                    {userZoneRisk ? (
+                                        <p style={{ margin: '3px 0 0 0', fontSize: '0.75rem', color: '#444' }}>
+                                            • <strong>Risk Score:</strong> {userZoneRisk.riskScore || 50}/100 [{userZoneRisk.riskLevel || 'HIGH'}]
+                                            <br />• <strong>Reason:</strong> {userZoneRisk.reason}
+                                        </p>
+                                    ) : (
+                                        <p style={{ margin: '3px 0 0 0', fontSize: '0.75rem', color: '#555' }}>
+                                            Tourist is in a low-risk zone with no geofence warnings.
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Live Weather at Tourist's Location */}
+                                <div style={{ background: 'linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)', color: '#1e3c72', padding: '8px 10px', borderRadius: '8px' }}>
+                                    <strong style={{ fontSize: '0.8rem' }}>🌤️ Weather at Tourist's Location</strong>
+                                    {userWeather ? (
+                                        <p style={{ margin: '3px 0 0 0', fontSize: '0.75rem' }}>
+                                            <strong>Temp:</strong> {userWeather.temp}°C | {userWeather.condition}
+                                            <br /><span style={{ fontWeight: 'bold' }}>{userWeather.advice}</span>
+                                        </p>
+                                    ) : (
+                                        <p style={{ margin: '3px 0 0 0', fontSize: '0.75rem', opacity: 0.9 }}>
+                                            {selectedUser.lastLocation ? 'Fetching live weather for tourist...' : 'No GPS coordinates available.'}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Google Maps Layer Selector for Admin */}
                     <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -1323,14 +1415,15 @@ function AdminDashboard({ user, logout }) {
                     <div className="hover-card fade-in delay-2">
                         <h3 style={{ marginTop: 0, fontSize: '1.1rem' }}>📋 Registered Tourists ({filteredUsers.length})</h3>
 
-                        {/* Instant Search Box */}
+                        {/* Instant Search Box with Enter Key Auto-Select */}
                         <div style={{ marginBottom: '12px' }}>
                             <input
                                 type="text"
                                 className="modern-input"
-                                placeholder="🔍 Search Tourist by Name / Email..."
+                                placeholder="🔍 Type Tourist Name & Press Enter..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
+                                onKeyDown={handleSearchKeyDown}
                                 style={{ margin: 0, padding: '8px 12px', fontSize: '0.85rem', borderRadius: '18px' }}
                             />
                         </div>
