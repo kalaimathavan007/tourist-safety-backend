@@ -643,6 +643,7 @@ function TouristDashboard({ user, logout }) {
     const [destSearchQuery, setDestSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [isSearchingDest, setIsSearchingDest] = useState(false);
+    const [touristTab, setTouristTab] = useState('map');
     const [blockchainHash, setBlockchainHash] = useState('');
     const [identity, setIdentity] = useState(null);
     const [weatherData, setWeatherData] = useState(null);
@@ -1036,6 +1037,44 @@ function TouristDashboard({ user, logout }) {
                 </div>
             </nav>
 
+            {/* Tourist Tab Navigation Switcher */}
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '15px', padding: '0 12px' }}>
+                <button
+                    type="button"
+                    onClick={() => setTouristTab('map')}
+                    className="action-btn"
+                    style={{
+                        background: touristTab === 'map' ? '#1e3c72' : '#ffffff',
+                        color: touristTab === 'map' ? '#ffffff' : '#1e3c72',
+                        padding: '10px 22px',
+                        borderRadius: '25px',
+                        fontSize: '0.9rem',
+                        fontWeight: 'bold',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                        border: '1.5px solid #1e3c72'
+                    }}
+                >
+                    🗺️ Safety Map & Nav
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setTouristTab('account')}
+                    className="action-btn"
+                    style={{
+                        background: touristTab === 'account' ? '#1e3c72' : '#ffffff',
+                        color: touristTab === 'account' ? '#ffffff' : '#1e3c72',
+                        padding: '10px 22px',
+                        borderRadius: '25px',
+                        fontSize: '0.9rem',
+                        fontWeight: 'bold',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                        border: '1.5px solid #1e3c72'
+                    }}
+                >
+                    👤 My Account & Pass
+                </button>
+            </div>
+
             <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 12px', display: 'flex', flexWrap: 'wrap', gap: '15px' }}>
                 <div style={{ flex: '1 1 500px', minWidth: '0', maxWidth: '100%' }} className="grid-col-left">
 
@@ -1255,104 +1294,31 @@ function TouristDashboard({ user, logout }) {
                         )}
                     </div>
 
-            <
-            div className = "hover-card fade-in delay-3" >
-            <
-            div style = {
-                { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }
-            } >
-            <
-            h3 style = {
-                { marginTop: 0, marginBottom: 0, fontSize: '1.05rem' }
-            } > 📢Your Alerts < /h3> <
-            button onClick = { fetchAlerts }
-            className = "action-btn"
-            style = {
-                { padding: '4px 10px', fontSize: '0.75rem' }
-            } > Refresh < /button> < /
-            div > <
-            hr style = {
-                { border: 'none', borderTop: '1px solid #eee', margin: '12px 0' }
-            }
-            />
+                    <div className="hover-card fade-in delay-3">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h3 style={{ marginTop: 0, marginBottom: 0, fontSize: '1.05rem' }}>📢 Your Alerts</h3>
+                            <button onClick={fetchAlerts} className="action-btn" style={{ padding: '4px 10px', fontSize: '0.75rem' }}>Refresh</button>
+                        </div>
+                        <hr style={{ border: 'none', borderTop: '1px solid #eee', margin: '12px 0' }} />
 
-            {
-                !Array.isArray(alerts) || alerts.length === 0 ? ( <
-                    p style = {
-                        { color: '#888', fontSize: '0.9rem', margin: '5px 0' }
-                    } > No active alerts.You are safe! < /p>
-                ) : ( <
-                    div style = {
-                        { maxHeight: '220px', overflowY: 'auto' }
-                    } > {
-                        alerts.map((alert) => ( <
-                            div key = { alert._id }
-                            className = "alert-item" >
-                            <
-                            strong style = {
-                                { color: '#d32f2f' }
-                            } > { alert.type ? alert.type.toUpperCase() : 'ALERT' } < /strong> - {alert.message} <
-                            br / > < small > 📍{ alert.location ? `${alert.location.lat.toFixed(4)}, ${alert.location.lng.toFixed(4)}` : 'N/A' } < /small> <
-                            br / > < small style = {
-                                { color: '#666' }
-                            } > 🕒{ new Date(alert.createdAt).toLocaleTimeString() } < /small> < /
-                            div >
-                        ))
-                    } <
-                    /div>
-                )
-            } <
-            /div>
-
-            <
-            div className = "hover-card fade-in delay-3" >
-            <
-            h3 style = {
-                { marginTop: 0, fontSize: '1.05rem' }
-            } > 🔗Blockchain Identity < /h3> {
-            identity && identity.hasIdentity !== false ? ( <
-                div style = {
-                    { fontSize: '0.9rem' }
-                } >
-                <
-                p style = {
-                    { margin: '4px 0' }
-                } > < strong > Name: < /strong> {identity.name}</p >
-                <
-                p style = {
-                    { margin: '4px 0' }
-                } > < strong > Email: < /strong> {identity.email}</p >
-                <
-                p style = {
-                    { margin: '4px 0' }
-                } > < strong > Phone: < /strong> {identity.phone}</p >
-                <
-                p style = {
-                    { margin: '4px 0', fontSize: '0.8rem', color: '#555', wordBreak: 'break-all' }
-                } >
-                <
-                strong > Hash: < /strong><br/ > { identity.blockchainHash || 'N/A' } <
-                /p> < /
-                div >
-            ) : ( <
-                div >
-                <
-                p style = {
-                    { color: '#888', fontSize: '0.85rem' }
-                } > No identity stored on blockchain yet. < /p> <
-                button onClick = { storeIdentity }
-                className = "action-btn"
-                style = {
-                    { width: '100%' }
-                } > Store My Identity < /button> < /
-                div >
-            )
-        } <
-        /div> < /
-        div > <
-        /div> < /
-        div >
-);
+                        {!Array.isArray(alerts) || alerts.length === 0 ? (
+                            <p style={{ color: '#888', fontSize: '0.9rem', margin: '5px 0' }}>No active alerts. You are safe!</p>
+                        ) : (
+                            <div style={{ maxHeight: '220px', overflowY: 'auto' }}>
+                                {alerts.map((alert) => (
+                                    <div key={alert._id} className="alert-item">
+                                        <strong style={{ color: '#d32f2f' }}>{alert.type ? alert.type.toUpperCase() : 'ALERT'}</strong> - {alert.message}<br />
+                                        <small>📍 {alert.location ? `${alert.location.lat.toFixed(4)}, ${alert.location.lng.toFixed(4)}` : 'N/A'}</small><br />
+                                        <small style={{ color: '#666' }}>🕒 {new Date(alert.createdAt).toLocaleTimeString()}</small>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 }
 
 // ------------------- Admin Dashboard -------------------
