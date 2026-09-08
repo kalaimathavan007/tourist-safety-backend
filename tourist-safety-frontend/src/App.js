@@ -640,6 +640,9 @@ function TouristDashboard({ user, logout }) {
     const [navRoutePoints, setNavRoutePoints] = useState([]);
     const [navDistanceKm, setNavDistanceKm] = useState('0');
     const [navDurationMins, setNavDurationMins] = useState(0);
+    const [destSearchQuery, setDestSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [isSearchingDest, setIsSearchingDest] = useState(false);
     const [blockchainHash, setBlockchainHash] = useState('');
     const [identity, setIdentity] = useState(null);
     const [weatherData, setWeatherData] = useState(null);
@@ -975,6 +978,36 @@ function TouristDashboard({ user, logout }) {
         setNavRoutePoints([]);
     };
 
+    const searchAnyDestination = async (query) => {
+        const q = (query || destSearchQuery).trim();
+        if (!q) return alert('Please enter a destination place name to search!');
+        setIsSearchingDest(true);
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`, {
+                headers: { 'User-Agent': 'TouristSafetyApp/1.0' }
+            });
+            const data = await res.json();
+            if (Array.isArray(data) && data.length > 0) {
+                const item = data[0];
+                const searchedPlace = {
+                    _id: `search_${item.place_id}`,
+                    name: item.display_name.split(',')[0],
+                    fullName: item.display_name,
+                    center: { lat: parseFloat(item.lat), lng: parseFloat(item.lon) },
+                    coordinates: [[parseFloat(item.lat), parseFloat(item.lon)]]
+                };
+                setSearchResults(prev => [searchedPlace, ...prev]);
+                handleStartNavigation(searchedPlace);
+            } else {
+                alert('No matching places found. Try typing another place name.');
+            }
+        } catch (err) {
+            console.error('Universal place search error:', err);
+            alert('Failed to search place. Check internet connection.');
+        }
+        setIsSearchingDest(false);
+    };
+
     const simulateFall = async() => {
         alert('🤖 Thozhan: Fall detected! Sending alert...');
         await sendSOS();
@@ -1024,29 +1057,60 @@ function TouristDashboard({ user, logout }) {
                         </div>
                     </div>
 
-                    {/* In-App Destination Selector & Turn-by-Turn Walking Navigation Bar */}
-                    <div className="hover-card fade-in" style={{ background: '#ffffff', borderRadius: '12px', padding: '12px', marginBottom: '12px', borderLeft: '4px solid #1e3c72' }}>
-                        <h3 style={{ margin: '0 0 8px 0', fontSize: '0.95rem', color: '#1e3c72' }}>🧭 Choose Destination & Start In-App Walking Navigation</h3>
+                    {/* Universal In-App Destination Search & Roadmap Navigation Bar */}
+                    <div className="hover-card fade-in" style={{ background: '#ffffff', borderRadius: '12px', padding: '14px', marginBottom: '12px', borderLeft: '4px solid #1e3c72' }}>
+                        <h3 style={{ margin: '0 0 8px 0', fontSize: '0.95rem', color: '#1e3c72' }}>
+                            🧭 Search ANY Place & Get Real-Time Roadmap Navigation
+                        </h3>
+
+                        {/* Universal Place Search Box */}
+                        <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
+                            <input
+                                type="text"
+                                className="modern-input"
+                                placeholder="🔍 Search ANY Place / Hotel / Station (e.g. Kovilpatti, Munnar Tea Museum)..."
+                                value={destSearchQuery}
+                                onChange={(e) => setDestSearchQuery(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === 'Enter') searchAnyDestination(destSearchQuery); }}
+                                style={{ flex: 1, margin: 0, padding: '8px 12px', fontSize: '0.85rem' }}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => searchAnyDestination(destSearchQuery)}
+                                className="action-btn"
+                                style={{ background: '#1e3c72', whiteSpace: 'nowrap', padding: '8px 14px', fontSize: '0.85rem' }}
+                                disabled={isSearchingDest}
+                            >
+                                {isSearchingDest ? 'Searching...' : '🔍 Search Road'}
+                            </button>
+                        </div>
+
+                        {/* Quick Dropdown Preset Selector */}
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                             <select
                                 className="modern-input"
                                 style={{ flex: 1, margin: 0, padding: '8px 12px', fontSize: '0.85rem' }}
                                 value={selectedDestination ? (selectedDestination._id || selectedDestination.name) : ''}
                                 onChange={(e) => {
-                                    const found = zones.find(z => (z._id || z.name) === e.target.value);
+                                    const found = [...zones, ...searchResults].find(z => (z._id || z.name) === e.target.value);
                                     if (found) handleStartNavigation(found);
                                 }}
                             >
-                                <option value="">📍 Select Destination Tourist Place...</option>
+                                <option value="">📍 Or Select Popular Tourist Danger Zones...</option>
                                 {Array.isArray(zones) && zones.map(z => (
                                     <option key={z._id || z.name} value={z._id || z.name}>
                                         {z.name} ({z.riskScore ? `Risk: ${z.riskScore}/100 - ${z.riskLevel}` : z.level})
                                     </option>
                                 ))}
+                                {searchResults.map(s => (
+                                    <option key={s._id} value={s._id}>
+                                        🔍 Searched: {s.name}
+                                    </option>
+                                ))}
                             </select>
                             {isNavigating ? (
                                 <button type="button" onClick={handleStopNavigation} className="action-btn" style={{ background: '#ff416c', padding: '8px 14px', fontSize: '0.85rem' }}>
-                                    ❌ Stop Navigation
+                                    ❌ Stop Nav
                                 </button>
                             ) : (
                                 <button type="button" onClick={() => selectedDestination && handleStartNavigation(selectedDestination)} className="action-btn" style={{ background: '#25D366', padding: '8px 14px', fontSize: '0.85rem' }}>
@@ -1066,7 +1130,7 @@ function TouristDashboard({ user, logout }) {
                                     </p>
                                 </div>
                                 <span style={{ background: 'rgba(255,255,255,0.2)', padding: '4px 8px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                                    🚶 Road-Matched Route Active
+                                    🚶 Real Roadmap Route Active
                                 </span>
                             </div>
                         )}
