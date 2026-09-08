@@ -27,6 +27,34 @@ const globalStyles = `
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     width: 100%;
     overflow-x: hidden;
+    transition: background 0.8s ease-in-out;
+  }
+
+  /* Weather-Adaptive Dynamic Background Themes */
+  .weather-bg-rain {
+    background: linear-gradient(135deg, #232526 0%, #414345 50%, #1e3c72 100%) !important;
+    animation: rainPulse 4s ease-in-out infinite alternate;
+  }
+  .weather-bg-clear {
+    background: linear-gradient(135deg, #fceabb 0%, #f8b500 50%, #2a5298 100%) !important;
+    animation: sunPulse 6s ease-in-out infinite alternate;
+  }
+  .weather-bg-cloudy {
+    background: linear-gradient(135deg, #a8c0ff 0%, #3f2b96 100%) !important;
+    animation: cloudPulse 5s ease-in-out infinite alternate;
+  }
+
+  @keyframes rainPulse {
+    0% { filter: brightness(0.92) contrast(1.05); }
+    100% { filter: brightness(1.08) contrast(1); }
+  }
+  @keyframes sunPulse {
+    0% { filter: brightness(1) saturate(1.1); }
+    100% { filter: brightness(1.08) saturate(1.25); }
+  }
+  @keyframes cloudPulse {
+    0% { filter: brightness(0.96); }
+    100% { filter: brightness(1.05); }
   }
 
   /* --- Splash Screen Styles --- */
@@ -886,8 +914,12 @@ function TouristDashboard({ user, logout }) {
         await sendSOS();
     };
 
+    const bgClass = weatherData && weatherData.isRain
+        ? 'gradient-bg weather-bg-rain'
+        : (weatherData && weatherData.condition && weatherData.condition.includes('Clear') ? 'gradient-bg weather-bg-clear' : 'gradient-bg weather-bg-cloudy');
+
     return (
-        <div className="gradient-bg">
+        <div className={bgClass}>
             <nav className="glass-navbar fade-in">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <img src="/logo.png" alt="Logo" style={{ width: '34px', height: '34px', borderRadius: '6px' }} />
