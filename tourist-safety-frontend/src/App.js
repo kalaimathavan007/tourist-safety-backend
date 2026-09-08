@@ -623,6 +623,7 @@ function TouristDashboard({ user, logout }) {
     const [chatMessage, setChatMessage] = useState('');
     const [chatReply, setChatReply] = useState('');
     const [language, setLanguage] = useState('en');
+    const [mapTileStyle, setMapTileStyle] = useState('google_hybrid');
     const [blockchainHash, setBlockchainHash] = useState('');
     const [identity, setIdentity] = useState(null);
     const [weatherData, setWeatherData] = useState(null);
@@ -958,12 +959,41 @@ function TouristDashboard({ user, logout }) {
                         </div>
                     </div>
 
+                    {/* Google Maps Layer Selector & Walking GPS Navigation */}
+                    <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                        <button type="button" onClick={() => setMapTileStyle('google_hybrid')} className="action-btn" style={{ background: mapTileStyle === 'google_hybrid' ? '#1e3c72' : '#78909c', padding: '5px 10px', fontSize: '0.75rem' }}>
+                            🛰️ Google Satellite
+                        </button>
+                        <button type="button" onClick={() => setMapTileStyle('google_streets')} className="action-btn" style={{ background: mapTileStyle === 'google_streets' ? '#1e3c72' : '#78909c', padding: '5px 10px', fontSize: '0.75rem' }}>
+                            🗺️ Google Streets
+                        </button>
+                        <button type="button" onClick={() => setMapTileStyle('osm')} className="action-btn" style={{ background: mapTileStyle === 'osm' ? '#1e3c72' : '#78909c', padding: '5px 10px', fontSize: '0.75rem' }}>
+                            🗺️ OSM Map
+                        </button>
+                        {currentLocation && (
+                            <a href={`https://www.google.com/maps/dir/?api=1&destination=${currentLocation.lat},${currentLocation.lng}&travelmode=walking`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', marginLeft: 'auto' }}>
+                                <button type="button" className="action-btn" style={{ background: '#34a853', padding: '5px 10px', fontSize: '0.75rem' }}>
+                                    📍 Open Google Maps Walking Nav ➔
+                                </button>
+                            </a>
+                        )}
+                    </div>
+
                     <div className="map-wrapper fade-in delay-1">
-                        <MapContainer center={currentLocation ? [currentLocation.lat, currentLocation.lng] : [20.5937, 78.9629]} zoom={12} style={{ height: '360px', width: '100%' }}>
-                            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
+                        <MapContainer center={currentLocation ? [currentLocation.lat, currentLocation.lng] : [20.5937, 78.9629]} zoom={14} style={{ height: '380px', width: '100%' }}>
+                            <TileLayer
+                                url={
+                                    mapTileStyle === 'google_hybrid'
+                                        ? 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}'
+                                        : (mapTileStyle === 'google_streets'
+                                            ? 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}'
+                                            : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
+                                }
+                                attribution="&copy; Google Maps / OpenStreetMap"
+                            />
                             {currentLocation && (
                                 <Marker position={[currentLocation.lat, currentLocation.lng]}>
-                                    <Popup>You are here (Live)</Popup>
+                                    <Popup>You are here (Live Walking GPS)</Popup>
                                 </Marker>
                             )}
                             {Array.isArray(zones) && zones.map((zone) => (
