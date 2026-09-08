@@ -1398,21 +1398,35 @@ function AdminDashboard({ user, logout }) {
             setUsers((prevUsers) => {
                 if (!Array.isArray(prevUsers)) return [];
                 const index = prevUsers.findIndex((u) => u.id === data.userId || u._id === data.userId);
+                let updated = [...prevUsers];
                 if (index !== -1) {
-                    const updated = [...prevUsers];
-                    updated[index].lastLocation = { lat: data.lat, lng: data.lng };
-                    updated[index].lastAlertTime = new Date();
-                    return updated;
+                    updated[index] = {
+                        ...updated[index],
+                        lastLocation: { lat: data.lat, lng: data.lng },
+                        lastAlertTime: new Date()
+                    };
                 } else {
-                    return [...prevUsers, {
+                    updated.push({
                         id: data.userId,
                         name: data.name,
                         email: 'Live Tourist',
                         lastLocation: { lat: data.lat, lng: data.lng },
                         lastAlertTime: new Date()
-                    }];
+                    });
                 }
+                return updated;
             });
+
+            // Live Auto-Follow Monitored Tourist on Admin Google Satellite Map
+            if (data && data.lat && data.lng) {
+                setSelectedUser((prevSelected) => {
+                    if (prevSelected && (prevSelected.id === data.userId || prevSelected._id === data.userId)) {
+                        setMapCenter([data.lat, data.lng]);
+                        return { ...prevSelected, lastLocation: { lat: data.lat, lng: data.lng } };
+                    }
+                    return prevSelected;
+                });
+            }
         });
 
         return () => socket.disconnect();
