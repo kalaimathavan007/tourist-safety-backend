@@ -570,17 +570,27 @@ function AuthScreen({ onLogin, onAdminLogin, initialMode = 'tourist' }) {
     );
 }
 
-// Speech Synthesis Helper for Voice Safety Warnings
+// Speech Synthesis Helper for Voice Safety Warnings (Android Mobile & Web)
 const speakSpeech = (text, lang = 'en') => {
-    if ('speechSynthesis' in window) {
+    if (!('speechSynthesis' in window)) return;
+    try {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
-        if (lang === 'ta') utterance.lang = 'ta-IN';
-        else if (lang === 'hi') utterance.lang = 'hi-IN';
-        else if (lang === 'ml') utterance.lang = 'ml-IN';
-        else utterance.lang = 'en-US';
+
+        const voices = window.speechSynthesis.getVoices();
+        const targetLang = lang === 'ta' ? 'ta' : lang === 'hi' ? 'hi' : lang === 'ml' ? 'ml' : 'en';
+
+        const matchedVoice = voices.find(v => v.lang.toLowerCase().includes(targetLang)) ||
+                             voices.find(v => v.lang.toLowerCase().includes('en')) ||
+                             voices[0];
+
+        if (matchedVoice) utterance.voice = matchedVoice;
         utterance.rate = 0.9;
+        utterance.volume = 1.0;
+
         window.speechSynthesis.speak(utterance);
+    } catch (e) {
+        console.error('Speech synthesis error:', e);
     }
 };
 
@@ -627,6 +637,9 @@ function TouristDashboard({ user, logout }) {
     const [walkingTrail, setWalkingTrail] = useState([]);
     const [selectedDestination, setSelectedDestination] = useState(null);
     const [isNavigating, setIsNavigating] = useState(false);
+    const [navRoutePoints, setNavRoutePoints] = useState([]);
+    const [navDistanceKm, setNavDistanceKm] = useState('0');
+    const [navDurationMins, setNavDurationMins] = useState(0);
     const [blockchainHash, setBlockchainHash] = useState('');
     const [identity, setIdentity] = useState(null);
     const [weatherData, setWeatherData] = useState(null);
@@ -914,25 +927,52 @@ function TouristDashboard({ user, logout }) {
         window.open(`https://api.whatsapp.com/send?text=${msg}`, '_blank');
     };
 
-    const handleStartNavigation = (zone) => {
+    const handleStartNavigation = async (zone) => {
         if (!zone) return alert('Please select a destination place!');
         if (!currentLocation) return alert('Acquiring live GPS location...');
+
         setSelectedDestination(zone);
         setIsNavigating(true);
 
+        const currentLat = currentLocation.lat;
+        const currentLng = currentLocation.lng;
         const destLat = zone.center ? zone.center.lat : zone.coordinates[0][0];
         const destLng = zone.center ? zone.center.lng : zone.coordinates[0][1];
-        const distKm = (getDistanceInMeters(currentLocation.lat, currentLocation.lng, destLat, destLng) / 1000).toFixed(1);
 
-        const voiceMsg = language === 'ta'
-            ? `${zone.name} இடத்திற்கான நேரலை வழிசெலுத்தல் தொடங்குகிறது. தூரம் ${distKm} கிலோமீட்டர். கவனமாக நடந்து செல்லவும்.`
-            : `Starting live in-app walking navigation to ${zone.name}. Distance ${distKm} kilometers. Please walk safely.`;
-        speakSpeech(voiceMsg, language);
+        // 1. Fetch Real Road-Matched Walking Route (Roadmap Geometry) from OSRM
+        try {
+            const osrmUrl = `https://router.project-osrm.org/route/v1/foot/${currentLng},${currentLat};${destLng},${destLat}?overview=full&geometries=geojson`;
+            const res = await fetch(osrmUrl);
+            const data = await res.json();
+
+            if (data && data.routes && data.routes.length > 0) {
+                const route = data.routes[0];
+                const rawCoords = route.geometry.coordinates; // Array of [lng, lat]
+                const latLngPoints = rawCoords.map(pt => [pt[1], pt[0]]); // Convert to [lat, lng]
+
+                setNavRoutePoints(latLngPoints);
+                const distKm = (route.distance / 1000).toFixed(1);
+                const durationMins = Math.round(route.duration / 60);
+                setNavDistanceKm(distKm);
+                setNavDurationMins(durationMins);
+
+                const voiceMsg = language === 'ta'
+                    ? `${zone.name} இடத்திற்கான சாலை வழித்தடம் கணக்கிடப்பட்டது. தூரம் ${distKm} கிலோமீட்டர். கவனமாக செல்லவும்.`
+                    : `Road route calculated to ${zone.name}. Distance ${distKm} kilometers. Est time ${durationMins} minutes.`;
+                speakSpeech(voiceMsg, language);
+            } else {
+                setNavRoutePoints([[currentLat, currentLng], [destLat, destLng]]);
+            }
+        } catch (e) {
+            console.error('OSRM route error:', e);
+            setNavRoutePoints([[currentLat, currentLng], [destLat, destLng]]);
+        }
     };
 
     const handleStopNavigation = () => {
         setIsNavigating(false);
         setSelectedDestination(null);
+        setNavRoutePoints([]);
     };
 
     const simulateFall = async() => {
@@ -1019,14 +1059,14 @@ function TouristDashboard({ user, logout }) {
                         {isNavigating && selectedDestination && currentLocation && (
                             <div style={{ marginTop: '10px', background: 'linear-gradient(90deg, #1e3c72 0%, #2a5298 100%)', color: '#ffffff', padding: '10px 14px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                                 <div>
-                                    <strong style={{ fontSize: '0.9rem' }}>🧭 Navigating to: {selectedDestination.name}</strong>
-                                    <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', opacity: 0.9 }}>
-                                        📏 <strong>Distance:</strong> {(getDistanceInMeters(currentLocation.lat, currentLocation.lng, selectedDestination.center ? selectedDestination.center.lat : selectedDestination.coordinates[0][0], selectedDestination.center ? selectedDestination.center.lng : selectedDestination.coordinates[0][1]) / 1000).toFixed(1)} km
-                                        &nbsp;|&nbsp; ⏱️ <strong>Est. Walk:</strong> {Math.round(((getDistanceInMeters(currentLocation.lat, currentLocation.lng, selectedDestination.center ? selectedDestination.center.lat : selectedDestination.coordinates[0][0], selectedDestination.center ? selectedDestination.center.lng : selectedDestination.coordinates[0][1]) / 1000) / 4.2) * 60)} mins
+                                    <strong style={{ fontSize: '0.95rem' }}>🧭 Navigating to: {selectedDestination.name}</strong>
+                                    <p style={{ margin: '3px 0 0 0', fontSize: '0.82rem', opacity: 0.95 }}>
+                                        📏 <strong>Road Distance:</strong> {navDistanceKm} km
+                                        &nbsp;|&nbsp; ⏱️ <strong>Est. Walk:</strong> {navDurationMins} mins
                                     </p>
                                 </div>
                                 <span style={{ background: 'rgba(255,255,255,0.2)', padding: '4px 8px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                                    🚶 Walking Mode Active
+                                    🚶 Road-Matched Route Active
                                 </span>
                             </div>
                         )}
@@ -1065,17 +1105,13 @@ function TouristDashboard({ user, logout }) {
                                     <Popup>You are here (Live Walking GPS)</Popup>
                                 </Marker>
                             )}
-                            {/* Live In-App Navigation Route Polyline */}
-                            {isNavigating && selectedDestination && currentLocation && (
+                            {/* Live In-App Road-Matched Navigation Route Polyline */}
+                            {isNavigating && navRoutePoints.length > 0 && (
                                 <Polyline
-                                    positions={[
-                                        [currentLocation.lat, currentLocation.lng],
-                                        [selectedDestination.center ? selectedDestination.center.lat : selectedDestination.coordinates[0][0], selectedDestination.center ? selectedDestination.center.lng : selectedDestination.coordinates[0][1]]
-                                    ]}
+                                    positions={navRoutePoints}
                                     color="#304ffe"
                                     weight={7}
                                     opacity={0.9}
-                                    dashArray="10, 10"
                                 />
                             )}
                             {Array.isArray(zones) && zones.map((zone) => (
