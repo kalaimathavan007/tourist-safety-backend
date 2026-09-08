@@ -1182,6 +1182,14 @@ function AdminDashboard({ user, logout }) {
     const [selectedUser, setSelectedUser] = useState(null);
     const [userAlerts, setUserAlerts] = useState([]);
     const [mapCenter, setMapCenter] = useState([20.5937, 78.9629]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [adminMapTileStyle, setAdminMapTileStyle] = useState('google_hybrid');
+
+    const filteredUsers = Array.isArray(users) ? users.filter(u =>
+        (u.name && u.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (u.email && u.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (u.phone && u.phone.includes(searchQuery))
+    ) : [];
 
     useEffect(() => {
         fetchUsers();
@@ -1244,7 +1252,7 @@ function AdminDashboard({ user, logout }) {
     const handleUserClick = (u) => {
         setSelectedUser(u);
         fetchUserAlerts(u.id || u._id);
-        if (u.lastLocation) {
+        if (u.lastLocation && u.lastLocation.lat) {
             setMapCenter([u.lastLocation.lat, u.lastLocation.lng]);
         }
     };
@@ -1264,11 +1272,39 @@ function AdminDashboard({ user, logout }) {
 
             <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 12px', display: 'flex', flexWrap: 'wrap', gap: '15px' }}>
                 <div style={{ flex: '1 1 500px', minWidth: '0', maxWidth: '100%' }} className="grid-col-left">
+
+                    {/* Google Maps Layer Selector for Admin */}
+                    <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                        <button type="button" onClick={() => setAdminMapTileStyle('google_hybrid')} className="action-btn" style={{ background: adminMapTileStyle === 'google_hybrid' ? '#1e3c72' : '#78909c', padding: '6px 12px', fontSize: '0.8rem' }}>
+                            🛰️ Google Satellite
+                        </button>
+                        <button type="button" onClick={() => setAdminMapTileStyle('google_streets')} className="action-btn" style={{ background: adminMapTileStyle === 'google_streets' ? '#1e3c72' : '#78909c', padding: '6px 12px', fontSize: '0.8rem' }}>
+                            🗺️ Google Streets
+                        </button>
+                        <button type="button" onClick={() => setAdminMapTileStyle('osm')} className="action-btn" style={{ background: adminMapTileStyle === 'osm' ? '#1e3c72' : '#78909c', padding: '6px 12px', fontSize: '0.8rem' }}>
+                            🗺️ OSM Map
+                        </button>
+                        {selectedUser && (
+                            <span style={{ marginLeft: 'auto', fontSize: '0.8rem', fontWeight: 'bold', color: '#1e3c72', background: '#e3f2fd', padding: '4px 10px', borderRadius: '12px' }}>
+                                📍 Selected: {selectedUser.name}
+                            </span>
+                        )}
+                    </div>
+
                     <div className="map-wrapper fade-in delay-1">
-                        <MapContainer center={mapCenter} zoom={6} style={{ height: '380px', width: '100%' }}>
-                            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
+                        <MapContainer center={mapCenter} zoom={13} style={{ height: '390px', width: '100%' }}>
+                            <TileLayer
+                                url={
+                                    adminMapTileStyle === 'google_hybrid'
+                                        ? 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}'
+                                        : (adminMapTileStyle === 'google_streets'
+                                            ? 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}'
+                                            : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
+                                }
+                                attribution="&copy; Google Maps / OpenStreetMap"
+                            />
                             {Array.isArray(users) && users.map((u) =>
-                                u.lastLocation && (
+                                u.lastLocation && u.lastLocation.lat && (
                                     <Marker key={u.id || u._id} position={[u.lastLocation.lat, u.lastLocation.lng]} eventHandlers={{ click: () => handleUserClick(u) }}>
                                         <Popup>
                                             <strong>{u.name}</strong><br />
@@ -1285,15 +1321,34 @@ function AdminDashboard({ user, logout }) {
 
                 <div style={{ flex: '1 1 320px', minWidth: '0', maxWidth: '100%' }} className="grid-col-right">
                     <div className="hover-card fade-in delay-2">
-                        <h3 style={{ marginTop: 0, fontSize: '1.1rem' }}>📋 Registered Tourists</h3>
-                        <ul style={{ listStyle: 'none', padding: 0, maxHeight: '180px', overflowY: 'auto' }}>
-                            {Array.isArray(users) && users.map((u) => (
-                                <li key={u.id || u._id} style={{ padding: '8px', borderBottom: '1px solid #eee', cursor: 'pointer' }} onClick={() => handleUserClick(u)}>
-                                    <strong style={{ fontSize: '0.95rem' }}>{u.name}</strong><br />
-                                    <small style={{ color: '#555' }}>{u.email}</small><br />
-                                    <small style={{ color: '#888' }}>Last loc: {u.lastLocation ? `${u.lastLocation.lat.toFixed(4)}, ${u.lastLocation.lng.toFixed(4)}` : 'Unknown'}</small>
-                                </li>
-                            ))}
+                        <h3 style={{ marginTop: 0, fontSize: '1.1rem' }}>📋 Registered Tourists ({filteredUsers.length})</h3>
+
+                        {/* Instant Search Box */}
+                        <div style={{ marginBottom: '12px' }}>
+                            <input
+                                type="text"
+                                className="modern-input"
+                                placeholder="🔍 Search Tourist by Name / Email..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                style={{ margin: 0, padding: '8px 12px', fontSize: '0.85rem', borderRadius: '18px' }}
+                            />
+                        </div>
+
+                        <ul style={{ listStyle: 'none', padding: 0, maxHeight: '200px', overflowY: 'auto' }}>
+                            {filteredUsers.length === 0 ? (
+                                <p style={{ color: '#888', fontSize: '0.85rem' }}>No matching tourists found.</p>
+                            ) : (
+                                filteredUsers.map((u) => (
+                                    <li key={u.id || u._id} style={{ padding: '8px', borderBottom: '1px solid #eee', cursor: 'pointer', background: selectedUser && (selectedUser.id === u.id || selectedUser._id === u._id) ? '#e3f2fd' : 'transparent', borderRadius: '6px' }} onClick={() => handleUserClick(u)}>
+                                        <strong style={{ fontSize: '0.95rem', color: '#1e3c72' }}>{u.name}</strong><br />
+                                        <small style={{ color: '#555' }}>{u.email}</small><br />
+                                        <small style={{ color: u.lastLocation ? '#2e7d32' : '#888', fontWeight: u.lastLocation ? 'bold' : 'normal' }}>
+                                            📍 Last loc: {u.lastLocation && u.lastLocation.lat ? `${u.lastLocation.lat.toFixed(4)}, ${u.lastLocation.lng.toFixed(4)}` : 'Unknown'}
+                                        </small>
+                                    </li>
+                                ))
+                            )}
                         </ul>
                     </div>
 
