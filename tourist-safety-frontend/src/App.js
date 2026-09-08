@@ -625,6 +625,8 @@ function TouristDashboard({ user, logout }) {
     const [language, setLanguage] = useState('en');
     const [mapTileStyle, setMapTileStyle] = useState('google_hybrid');
     const [walkingTrail, setWalkingTrail] = useState([]);
+    const [selectedDestination, setSelectedDestination] = useState(null);
+    const [isNavigating, setIsNavigating] = useState(false);
     const [blockchainHash, setBlockchainHash] = useState('');
     const [identity, setIdentity] = useState(null);
     const [weatherData, setWeatherData] = useState(null);
@@ -912,6 +914,27 @@ function TouristDashboard({ user, logout }) {
         window.open(`https://api.whatsapp.com/send?text=${msg}`, '_blank');
     };
 
+    const handleStartNavigation = (zone) => {
+        if (!zone) return alert('Please select a destination place!');
+        if (!currentLocation) return alert('Acquiring live GPS location...');
+        setSelectedDestination(zone);
+        setIsNavigating(true);
+
+        const destLat = zone.center ? zone.center.lat : zone.coordinates[0][0];
+        const destLng = zone.center ? zone.center.lng : zone.coordinates[0][1];
+        const distKm = (getDistanceInMeters(currentLocation.lat, currentLocation.lng, destLat, destLng) / 1000).toFixed(1);
+
+        const voiceMsg = language === 'ta'
+            ? `${zone.name} இடத்திற்கான நேரலை வழிசெலுத்தல் தொடங்குகிறது. தூரம் ${distKm} கிலோமீட்டர். கவனமாக நடந்து செல்லவும்.`
+            : `Starting live in-app walking navigation to ${zone.name}. Distance ${distKm} kilometers. Please walk safely.`;
+        speakSpeech(voiceMsg, language);
+    };
+
+    const handleStopNavigation = () => {
+        setIsNavigating(false);
+        setSelectedDestination(null);
+    };
+
     const simulateFall = async() => {
         alert('🤖 Thozhan: Fall detected! Sending alert...');
         await sendSOS();
@@ -961,6 +984,54 @@ function TouristDashboard({ user, logout }) {
                         </div>
                     </div>
 
+                    {/* In-App Destination Selector & Turn-by-Turn Walking Navigation Bar */}
+                    <div className="hover-card fade-in" style={{ background: '#ffffff', borderRadius: '12px', padding: '12px', marginBottom: '12px', borderLeft: '4px solid #1e3c72' }}>
+                        <h3 style={{ margin: '0 0 8px 0', fontSize: '0.95rem', color: '#1e3c72' }}>🧭 Choose Destination & Start In-App Walking Navigation</h3>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                            <select
+                                className="modern-input"
+                                style={{ flex: 1, margin: 0, padding: '8px 12px', fontSize: '0.85rem' }}
+                                value={selectedDestination ? (selectedDestination._id || selectedDestination.name) : ''}
+                                onChange={(e) => {
+                                    const found = zones.find(z => (z._id || z.name) === e.target.value);
+                                    if (found) handleStartNavigation(found);
+                                }}
+                            >
+                                <option value="">📍 Select Destination Tourist Place...</option>
+                                {Array.isArray(zones) && zones.map(z => (
+                                    <option key={z._id || z.name} value={z._id || z.name}>
+                                        {z.name} ({z.riskScore ? `Risk: ${z.riskScore}/100 - ${z.riskLevel}` : z.level})
+                                    </option>
+                                ))}
+                            </select>
+                            {isNavigating ? (
+                                <button type="button" onClick={handleStopNavigation} className="action-btn" style={{ background: '#ff416c', padding: '8px 14px', fontSize: '0.85rem' }}>
+                                    ❌ Stop Navigation
+                                </button>
+                            ) : (
+                                <button type="button" onClick={() => selectedDestination && handleStartNavigation(selectedDestination)} className="action-btn" style={{ background: '#25D366', padding: '8px 14px', fontSize: '0.85rem' }}>
+                                    🧭 Start Nav
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Turn-by-Turn Navigation Header Banner over Map */}
+                        {isNavigating && selectedDestination && currentLocation && (
+                            <div style={{ marginTop: '10px', background: 'linear-gradient(90deg, #1e3c72 0%, #2a5298 100%)', color: '#ffffff', padding: '10px 14px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                                <div>
+                                    <strong style={{ fontSize: '0.9rem' }}>🧭 Navigating to: {selectedDestination.name}</strong>
+                                    <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', opacity: 0.9 }}>
+                                        📏 <strong>Distance:</strong> {(getDistanceInMeters(currentLocation.lat, currentLocation.lng, selectedDestination.center ? selectedDestination.center.lat : selectedDestination.coordinates[0][0], selectedDestination.center ? selectedDestination.center.lng : selectedDestination.coordinates[0][1]) / 1000).toFixed(1)} km
+                                        &nbsp;|&nbsp; ⏱️ <strong>Est. Walk:</strong> {Math.round(((getDistanceInMeters(currentLocation.lat, currentLocation.lng, selectedDestination.center ? selectedDestination.center.lat : selectedDestination.coordinates[0][0], selectedDestination.center ? selectedDestination.center.lng : selectedDestination.coordinates[0][1]) / 1000) / 4.2) * 60)} mins
+                                    </p>
+                                </div>
+                                <span style={{ background: 'rgba(255,255,255,0.2)', padding: '4px 8px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                                    🚶 Walking Mode Active
+                                </span>
+                            </div>
+                        )}
+                    </div>
+
                     {/* In-App Google Maps Layer Selector */}
                     <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                         <button type="button" onClick={() => setMapTileStyle('google_hybrid')} className="action-btn" style={{ background: mapTileStyle === 'google_hybrid' ? '#1e3c72' : '#78909c', padding: '6px 12px', fontSize: '0.8rem' }}>
@@ -994,9 +1065,18 @@ function TouristDashboard({ user, logout }) {
                                     <Popup>You are here (Live Walking GPS)</Popup>
                                 </Marker>
                             )}
-                            {/* Live In-App Walking Route Polyline */}
-                            {walkingTrail.length > 1 && (
-                                <Polyline positions={walkingTrail} color="#00c3ff" weight={6} opacity={0.9} />
+                            {/* Live In-App Navigation Route Polyline */}
+                            {isNavigating && selectedDestination && currentLocation && (
+                                <Polyline
+                                    positions={[
+                                        [currentLocation.lat, currentLocation.lng],
+                                        [selectedDestination.center ? selectedDestination.center.lat : selectedDestination.coordinates[0][0], selectedDestination.center ? selectedDestination.center.lng : selectedDestination.coordinates[0][1]]
+                                    ]}
+                                    color="#304ffe"
+                                    weight={7}
+                                    opacity={0.9}
+                                    dashArray="10, 10"
+                                />
                             )}
                             {Array.isArray(zones) && zones.map((zone) => (
                                 <Polygon key={zone._id || zone.name} positions={zone.coordinates} color={zone.level === 'danger' ? '#ff416c' : '#ffb347'} fillColor={zone.level === 'danger' ? '#ff416c' : '#ffb347'} fillOpacity={0.4}>
