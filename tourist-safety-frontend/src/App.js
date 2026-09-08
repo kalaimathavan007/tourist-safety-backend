@@ -1075,105 +1075,206 @@ function TouristDashboard({ user, logout }) {
                 </button>
             </div>
 
-            <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 12px', display: 'flex', flexWrap: 'wrap', gap: '15px' }}>
-                <div style={{ flex: '1 1 500px', minWidth: '0', maxWidth: '100%' }} className="grid-col-left">
+            {/* Tab 1: Instagram-Style My Account & Settings Page */}
+            {touristTab === 'account' ? (
+                <div style={{ maxWidth: '600px', margin: '0 auto', width: '100%', padding: '0 12px' }} className="fade-in">
 
-                    {/* Live Weather & Monsoon Alert Widget */}
-                    <div className="hover-card fade-in" style={{ background: 'linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)', color: '#1e3c72', padding: '12px 18px', marginBottom: '12px' }}>
+                    {/* Instagram Header Banner & Avatar Card */}
+                    <div className="hover-card" style={{ background: '#ffffff', borderRadius: '20px', padding: '24px 20px', textAlign: 'center', boxShadow: '0 8px 25px rgba(0,0,0,0.08)' }}>
+                        <div style={{ width: '85px', height: '85px', borderRadius: '50%', background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.2rem', fontWeight: 'bold', margin: '0 auto 12px auto', border: '4px solid #ffffff', boxShadow: '0 4px 15px rgba(30,60,114,0.3)' }}>
+                            {user && user.name ? user.name.charAt(0).toUpperCase() : 'T'}
+                        </div>
+
+                        <h2 style={{ margin: '4px 0 2px 0', fontSize: '1.4rem', color: '#1e3c72' }}>
+                            {user ? user.name : 'Tourist'} <span style={{ color: '#25D366', fontSize: '1.1rem' }}>☑️</span>
+                        </h2>
+                        <p style={{ margin: '0 0 12px 0', fontSize: '0.9rem', color: '#666', fontWeight: '500' }}>
+                            📍 {user ? (user.place || 'Kerala Tourist') : 'Tamil Nadu, India'}
+                        </p>
+
+                        {/* Instagram Style Stats Bar */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', background: '#f5f7fa', padding: '12px 8px', borderRadius: '12px', margin: '15px 0' }}>
+                            <div>
+                                <strong style={{ display: 'block', fontSize: '1.1rem', color: '#1e3c72' }}>100%</strong>
+                                <small style={{ color: '#777', fontSize: '0.75rem' }}>Safety Score</small>
+                            </div>
+                            <div style={{ borderLeft: '1px solid #ddd', borderRight: '1px solid #ddd' }}>
+                                <strong style={{ display: 'block', fontSize: '1.1rem', color: '#2e7d32' }}>VERIFIED</strong>
+                                <small style={{ color: '#777', fontSize: '0.75rem' }}>Passport / ID</small>
+                            </div>
+                            <div>
+                                <strong style={{ display: 'block', fontSize: '1.1rem', color: '#1976d2' }}>ACTIVE</strong>
+                                <small style={{ color: '#777', fontSize: '0.75rem' }}>GPS Tracking</small>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+                            <button onClick={() => setTouristTab('map')} className="action-btn" style={{ flex: 1, background: '#1e3c72', padding: '10px', fontSize: '0.85rem' }}>
+                                🗺️ Open Live Safety Map
+                            </button>
+                            <button onClick={logout} className="action-btn" style={{ background: '#ff416c', padding: '10px 16px', fontSize: '0.85rem' }}>
+                                🚪 Logout
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Digital Verification ID Pass Card */}
+                    <div className="hover-card delay-1" style={{ background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)', borderRadius: '16px', padding: '18px', borderLeft: '6px solid #1e3c72' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
-                                <h3 style={{ margin: 0, fontSize: '1rem' }}>🌤️ Live GPS Weather Monitoring</h3>
-                                <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', fontWeight: 'bold' }}>
-                                    {weatherData ? `Temp: ${weatherData.temp}°C | ${weatherData.condition}` : 'Munnar / Kerala: 22°C - Monsoon Rain Warning 🌧️'}
-                                </p>
-                                <p style={{ margin: '2px 0 0 0', fontSize: '0.75rem', opacity: 0.9 }}>
-                                    {weatherData ? weatherData.advice : '⚠️ High slippery rock risk at waterfalls. Stay on guided trails.'}
-                                </p>
+                                <span style={{ background: '#1e3c72', color: 'white', padding: '3px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 'bold' }}>GOVT VERIFIED PASS</span>
+                                <h3 style={{ margin: '8px 0 2px 0', fontSize: '1.1rem', color: '#1e3c72' }}>🪪 Digital Verification ID</h3>
+                                <p style={{ margin: '3px 0', fontSize: '0.85rem', color: '#444' }}><strong>Verification ID:</strong> #TG-{(user ? (user.id || user._id || '8839') : '8839').toString().slice(-6)}</p>
+                                <p style={{ margin: '3px 0', fontSize: '0.8rem', color: '#2e7d32', fontWeight: 'bold' }}>✅ Active Geofence & Emergency Protection</p>
                             </div>
-                            <button onClick={playVoiceStatus} className="action-btn" style={{ background: '#1e3c72', padding: '6px 12px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
-                                🔊 Voice Safety Status
-                            </button>
+                            <div style={{ textAlign: 'center', background: '#ffffff', padding: '8px', borderRadius: '10px', border: '1px solid #eee' }}>
+                                <SimpleQRCode text={`JOURNEY-GUARD-PASS-${user ? user.id : 'GUEST'}`} />
+                                <small style={{ display: 'block', fontSize: '0.65rem', color: '#888', marginTop: '3px' }}>Scan ID</small>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Universal In-App Destination Search & Roadmap Navigation Bar */}
-                    <div className="hover-card fade-in" style={{ background: '#ffffff', borderRadius: '12px', padding: '14px', marginBottom: '12px', borderLeft: '4px solid #1e3c72' }}>
-                        <h3 style={{ margin: '0 0 8px 0', fontSize: '0.95rem', color: '#1e3c72' }}>
-                            🧭 Search ANY Place & Get Real-Time Roadmap Navigation
-                        </h3>
-
-                        {/* Universal Place Search Box */}
-                        <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
-                            <input
-                                type="text"
-                                className="modern-input"
-                                placeholder="🔍 Search ANY Place / Hotel / Station (e.g. Kovilpatti, Munnar Tea Museum)..."
-                                value={destSearchQuery}
-                                onChange={(e) => setDestSearchQuery(e.target.value)}
-                                onKeyDown={(e) => { if (e.key === 'Enter') searchAnyDestination(destSearchQuery); }}
-                                style={{ flex: 1, margin: 0, padding: '8px 12px', fontSize: '0.85rem' }}
-                            />
-                            <button
-                                type="button"
-                                onClick={() => searchAnyDestination(destSearchQuery)}
-                                className="action-btn"
-                                style={{ background: '#1e3c72', whiteSpace: 'nowrap', padding: '8px 14px', fontSize: '0.85rem' }}
-                                disabled={isSearchingDest}
-                            >
-                                {isSearchingDest ? 'Searching...' : '🔍 Search Road'}
-                            </button>
+                    {/* Personal Details Card */}
+                    <div className="hover-card delay-2" style={{ background: '#ffffff', borderRadius: '16px', padding: '18px' }}>
+                        <h3 style={{ margin: '0 0 12px 0', fontSize: '1.05rem', color: '#1e3c72' }}>👤 Tourist Personal Details</h3>
+                        <div style={{ background: '#f8f9fa', padding: '12px', borderRadius: '10px', fontSize: '0.9rem' }}>
+                            <p style={{ margin: '6px 0' }}><strong>Full Name:</strong> {user ? user.name : 'Tourist'}</p>
+                            <p style={{ margin: '6px 0' }}><strong>Email Address:</strong> {user ? user.email : 'N/A'}</p>
+                            <p style={{ margin: '6px 0' }}><strong>Phone Number:</strong> {user ? user.phone || 'N/A' : 'N/A'}</p>
+                            <p style={{ margin: '6px 0' }}><strong>Hometown / Place (ஊர்):</strong> {user ? (user.place || 'Kerala Tourist Spot') : 'Tamil Nadu, India'}</p>
                         </div>
+                    </div>
 
-                        {/* Quick Dropdown Preset Selector */}
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                            <select
-                                className="modern-input"
-                                style={{ flex: 1, margin: 0, padding: '8px 12px', fontSize: '0.85rem' }}
-                                value={selectedDestination ? (selectedDestination._id || selectedDestination.name) : ''}
-                                onChange={(e) => {
-                                    const found = [...zones, ...searchResults].find(z => (z._id || z.name) === e.target.value);
-                                    if (found) handleStartNavigation(found);
-                                }}
-                            >
-                                <option value="">📍 Or Select Popular Tourist Danger Zones...</option>
-                                {Array.isArray(zones) && zones.map(z => (
-                                    <option key={z._id || z.name} value={z._id || z.name}>
-                                        {z.name} ({z.riskScore ? `Risk: ${z.riskScore}/100 - ${z.riskLevel}` : z.level})
-                                    </option>
-                                ))}
-                                {searchResults.map(s => (
-                                    <option key={s._id} value={s._id}>
-                                        🔍 Searched: {s.name}
-                                    </option>
-                                ))}
-                            </select>
-                            {isNavigating ? (
-                                <button type="button" onClick={handleStopNavigation} className="action-btn" style={{ background: '#ff416c', padding: '8px 14px', fontSize: '0.85rem' }}>
-                                    ❌ Stop Nav
+                    {/* Settings & Preferences Card */}
+                    <div className="hover-card delay-3" style={{ background: '#ffffff', borderRadius: '16px', padding: '18px' }}>
+                        <h3 style={{ margin: '0 0 12px 0', fontSize: '1.05rem', color: '#1e3c72' }}>⚙️ Account Settings & Preferences</h3>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: '#f8f9fa', borderRadius: '8px' }}>
+                                <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>🌐 Preferred Language</span>
+                                <select className="modern-input" value={language} onChange={(e) => setLanguage(e.target.value)} style={{ width: 'auto', margin: 0, padding: '6px 10px', fontSize: '0.85rem' }}>
+                                    <option value="en">🇬🇧 English</option>
+                                    <option value="ta">🇮🇳 தமிழ்</option>
+                                    <option value="ml">🌴 മലയാളം</option>
+                                    <option value="hi">🇮🇳 हिन्दी</option>
+                                </select>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: '#f8f9fa', borderRadius: '8px' }}>
+                                <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>🔊 AI Voice Safety Assistant</span>
+                                <button onClick={playVoiceStatus} className="action-btn" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
+                                    Test Voice 🔊
                                 </button>
-                            ) : (
-                                <button type="button" onClick={() => selectedDestination && handleStartNavigation(selectedDestination)} className="action-btn" style={{ background: '#25D366', padding: '8px 14px', fontSize: '0.85rem' }}>
-                                    🧭 Start Nav
-                                </button>
-                            )}
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: '#f8f9fa', borderRadius: '8px' }}>
+                                <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>🔔 Geofence Safety Alerts</span>
+                                <span style={{ color: '#2e7d32', fontWeight: 'bold', fontSize: '0.85rem' }}>🟢 Enabled (1-Time Alert)</span>
+                            </div>
                         </div>
+                    </div>
+                </div>
+            ) : (
+                /* Tab 2: Map & Safety Navigation Dashboard */
+                <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 12px', display: 'flex', flexWrap: 'wrap', gap: '15px' }} className="fade-in">
+                    <div style={{ flex: '1 1 500px', minWidth: '0', maxWidth: '100%' }} className="grid-col-left">
 
-                        {/* Turn-by-Turn Navigation Header Banner over Map */}
-                        {isNavigating && selectedDestination && currentLocation && (
-                            <div style={{ marginTop: '10px', background: 'linear-gradient(90deg, #1e3c72 0%, #2a5298 100%)', color: '#ffffff', padding: '10px 14px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                        {/* Live Weather & Monsoon Alert Widget */}
+                        <div className="hover-card fade-in" style={{ background: 'linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)', color: '#1e3c72', padding: '12px 18px', marginBottom: '12px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div>
-                                    <strong style={{ fontSize: '0.95rem' }}>🧭 Navigating to: {selectedDestination.name}</strong>
-                                    <p style={{ margin: '3px 0 0 0', fontSize: '0.82rem', opacity: 0.95 }}>
-                                        📏 <strong>Road Distance:</strong> {navDistanceKm} km
-                                        &nbsp;|&nbsp; ⏱️ <strong>Est. Walk:</strong> {navDurationMins} mins
+                                    <h3 style={{ margin: 0, fontSize: '1rem' }}>🌤️ Live GPS Weather Monitoring</h3>
+                                    <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', fontWeight: 'bold' }}>
+                                        {weatherData ? `Temp: ${weatherData.temp}°C | ${weatherData.condition}` : 'Munnar / Kerala: 22°C - Monsoon Rain Warning 🌧️'}
+                                    </p>
+                                    <p style={{ margin: '2px 0 0 0', fontSize: '0.75rem', opacity: 0.9 }}>
+                                        {weatherData ? weatherData.advice : '⚠️ High slippery rock risk at waterfalls. Stay on guided trails.'}
                                     </p>
                                 </div>
-                                <span style={{ background: 'rgba(255,255,255,0.2)', padding: '4px 8px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                                    🚶 Real Roadmap Route Active
-                                </span>
+                                <button onClick={playVoiceStatus} className="action-btn" style={{ background: '#1e3c72', padding: '6px 12px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                                    🔊 Voice Safety Status
+                                </button>
                             </div>
-                        )}
-                    </div>
+                        </div>
+
+                        {/* Universal In-App Destination Search & Roadmap Navigation Bar */}
+                        <div className="hover-card fade-in" style={{ background: '#ffffff', borderRadius: '12px', padding: '14px', marginBottom: '12px', borderLeft: '4px solid #1e3c72' }}>
+                            <h3 style={{ margin: '0 0 8px 0', fontSize: '0.95rem', color: '#1e3c72' }}>
+                                🧭 Search ANY Place & Get Real-Time Roadmap Navigation
+                            </h3>
+
+                            {/* Universal Place Search Box */}
+                            <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
+                                <input
+                                    type="text"
+                                    className="modern-input"
+                                    placeholder="🔍 Search ANY Place / Hotel / Station (e.g. Kovilpatti, Munnar Tea Museum)..."
+                                    value={destSearchQuery}
+                                    onChange={(e) => setDestSearchQuery(e.target.value)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') searchAnyDestination(destSearchQuery); }}
+                                    style={{ flex: 1, margin: 0, padding: '8px 12px', fontSize: '0.85rem' }}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => searchAnyDestination(destSearchQuery)}
+                                    className="action-btn"
+                                    style={{ background: '#1e3c72', whiteSpace: 'nowrap', padding: '8px 14px', fontSize: '0.85rem' }}
+                                    disabled={isSearchingDest}
+                                >
+                                    {isSearchingDest ? 'Searching...' : '🔍 Search Road'}
+                                </button>
+                            </div>
+
+                            {/* Quick Dropdown Preset Selector */}
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                                <select
+                                    className="modern-input"
+                                    style={{ flex: 1, margin: 0, padding: '8px 12px', fontSize: '0.85rem' }}
+                                    value={selectedDestination ? (selectedDestination._id || selectedDestination.name) : ''}
+                                    onChange={(e) => {
+                                        const found = [...zones, ...searchResults].find(z => (z._id || z.name) === e.target.value);
+                                        if (found) handleStartNavigation(found);
+                                    }}
+                                >
+                                    <option value="">📍 Or Select Popular Tourist Danger Zones...</option>
+                                    {Array.isArray(zones) && zones.map(z => (
+                                        <option key={z._id || z.name} value={z._id || z.name}>
+                                            {z.name} ({z.riskScore ? `Risk: ${z.riskScore}/100 - ${z.riskLevel}` : z.level})
+                                        </option>
+                                    ))}
+                                    {searchResults.map(s => (
+                                        <option key={s._id} value={s._id}>
+                                            🔍 Searched: {s.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                {isNavigating ? (
+                                    <button type="button" onClick={handleStopNavigation} className="action-btn" style={{ background: '#ff416c', padding: '8px 14px', fontSize: '0.85rem' }}>
+                                        ❌ Stop Nav
+                                    </button>
+                                ) : (
+                                    <button type="button" onClick={() => selectedDestination && handleStartNavigation(selectedDestination)} className="action-btn" style={{ background: '#25D366', padding: '8px 14px', fontSize: '0.85rem' }}>
+                                        🧭 Start Nav
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Turn-by-Turn Navigation Header Banner over Map */}
+                            {isNavigating && selectedDestination && currentLocation && (
+                                <div style={{ marginTop: '10px', background: 'linear-gradient(90deg, #1e3c72 0%, #2a5298 100%)', color: '#ffffff', padding: '10px 14px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                                    <div>
+                                        <strong style={{ fontSize: '0.95rem' }}>🧭 Navigating to: {selectedDestination.name}</strong>
+                                        <p style={{ margin: '3px 0 0 0', fontSize: '0.82rem', opacity: 0.95 }}>
+                                            📏 <strong>Road Distance:</strong> {navDistanceKm} km
+                                            &nbsp;|&nbsp; ⏱️ <strong>Est. Walk:</strong> {navDurationMins} mins
+                                        </p>
+                                    </div>
+                                    <span style={{ background: 'rgba(255,255,255,0.2)', padding: '4px 8px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                                        🚶 Real Roadmap Route Active
+                                    </span>
+                                </div>
+                            )}
+                        </div>
 
                     {/* In-App Google Maps Layer Selector */}
                     <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -1317,6 +1418,7 @@ function TouristDashboard({ user, logout }) {
                     </div>
                 </div>
             </div>
+            )}
         </div>
     );
 }
