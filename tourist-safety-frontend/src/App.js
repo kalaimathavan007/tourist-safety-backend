@@ -101,6 +101,57 @@ const globalStyles = `
     width: 100%;
   }
 
+  /* Animated Glassmorphism Bottom Navigation Bar */
+  .bottom-nav-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100vw;
+    background: rgba(30, 60, 114, 0.94);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 8px 12px;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.25);
+    z-index: 99999;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 6px 18px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .bottom-nav-item.active {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.22);
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 4px 15px rgba(0, 195, 255, 0.3);
+  }
+
+  .bottom-nav-item-icon {
+    font-size: 1.3rem;
+    margin-bottom: 2px;
+    transition: transform 0.3s ease;
+  }
+
+  .bottom-nav-item.active .bottom-nav-item-icon {
+    transform: scale(1.15);
+  }
+
   .navbar-brand { font-size: 1.2rem; font-weight: bold; margin: 0; letter-spacing: 1px; }
   .navbar-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
@@ -649,6 +700,8 @@ function TouristDashboard({ user, logout }) {
     const [identity, setIdentity] = useState(null);
     const [weatherData, setWeatherData] = useState(null);
     const [lastAnomalyTime, setLastAnomalyTime] = useState(0);
+    const [showSosModal, setShowSosModal] = useState(false);
+    const [sosTimer, setSosTimer] = useState(30);
 
     // Fetch Real-time Live Weather automatically based on Tourist GPS Location
     useEffect(() => {
@@ -838,7 +891,28 @@ function TouristDashboard({ user, logout }) {
         } catch (err) { alert("Error: " + err.message); }
     };
 
-    const sendSOS = async() => {
+    const triggerSosModal = () => {
+        if (!currentLocation) return alert('Acquiring live GPS location...');
+        setShowSosModal(true);
+        setSosTimer(30);
+    };
+
+    useEffect(() => {
+        let timerId = null;
+        if (showSosModal) {
+            if (sosTimer > 0) {
+                timerId = setInterval(() => {
+                    setSosTimer(prev => prev - 1);
+                }, 1000);
+            } else {
+                executeActualSOS();
+                setShowSosModal(false);
+            }
+        }
+        return () => clearInterval(timerId);
+    }, [showSosModal, sosTimer]);
+
+    const executeActualSOS = async() => {
         if (!currentLocation) return alert('Getting location...');
         try {
             const alertRes = await fetch(`${BACKEND_URL}/api/alerts`, {
@@ -883,7 +957,7 @@ function TouristDashboard({ user, logout }) {
             const bcData = await bcRes.json();
             setBlockchainHash(bcData.hash);
 
-            alert(`SOS sent! E-FIR downloaded. Blockchain hash: ${bcData.hash}`);
+            alert(`🚨 EMERGENCY SOS EXECUTED SUCCESSFULLY!\n\n• GPS Location Sent\n• E-FIR Downloaded\n• Blockchain Hash: ${bcData.hash}`);
             setSosMessage('');
             fetchAlerts();
         } catch (err) { alert('Failed: ' + err.message); }
@@ -1051,8 +1125,8 @@ function TouristDashboard({ user, logout }) {
     };
 
     const simulateFall = async() => {
-        alert('🤖 Thozhan: Fall detected! Sending alert...');
-        await sendSOS();
+        alert('🤖 Thozhan: Fall detected! Sending emergency alert...');
+        await executeActualSOS();
     };
 
     const bgClass = weatherData && weatherData.isRain
@@ -1466,7 +1540,7 @@ function TouristDashboard({ user, logout }) {
                         <h3 style={{ marginTop: 0, color: '#c62828', fontSize: '1.1rem' }}>🆘 Emergency Actions</h3>
                         <input className="modern-input" type="text" placeholder="Optional emergency message..." value={sosMessage} onChange={(e) => setSosMessage(e.target.value)} />
 
-                        <button onClick={sendSOS} className="pulse-btn" style={{ background: 'linear-gradient(45deg, #ff416c, #ff4b2b)' }}>🚨 SEND SOS IMMEDIATELY 🚨</button>
+                        <button onClick={triggerSosModal} className="pulse-btn" style={{ background: 'linear-gradient(45deg, #ff416c, #ff4b2b)' }}>🚨 SEND SOS IMMEDIATELY 🚨</button>
 
                         <button onClick={shareWhatsappGPS} className="action-btn" style={{ background: '#25D366', width: '100%', marginTop: '10px', padding: '10px', fontWeight: 'bold' }}>💬 Share Live GPS on WhatsApp</button>
 
@@ -1503,6 +1577,77 @@ function TouristDashboard({ user, logout }) {
                 </div>
             </div>
             )}
+
+            {/* 30-Second Emergency SOS Countdown Confirmation Modal */}
+            {showSosModal && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+                    background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
+                    display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 999999, padding: '16px'
+                }} className="fade-in">
+                    <div style={{
+                        background: '#ffffff', borderRadius: '20px', padding: '28px 20px', maxWidth: '420px', width: '100%',
+                        textAlign: 'center', boxShadow: '0 20px 50px rgba(255,65,108,0.5)', border: '3px solid #ff416c'
+                    }}>
+                        <h2 style={{ color: '#d32f2f', margin: '0 0 10px 0', fontSize: '1.4rem' }}>🚨 EMERGENCY SOS TRIGGERED!</h2>
+                        <p style={{ color: '#444', fontSize: '0.95rem', margin: '0 0 15px 0' }}>
+                            Sending emergency GPS alert, notifying authorities, downloading E-FIR PDF & storing on Blockchain.
+                        </p>
+
+                        <div style={{
+                            width: '100px', height: '100px', borderRadius: '50%', background: 'linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%)',
+                            color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                            margin: '0 auto 20px auto', boxShadow: '0 0 25px rgba(255,65,108,0.6)', animation: 'pulse 1s infinite'
+                        }}>
+                            <span style={{ fontSize: '2.2rem', fontWeight: 'bold', lineHeight: '1' }}>{sosTimer}s</span>
+                            <small style={{ fontSize: '0.65rem', textTransform: 'uppercase', opacity: 0.9 }}>Auto Send</small>
+                        </div>
+
+                        <p style={{ fontSize: '0.85rem', color: '#666', marginBottom: '20px' }}>
+                            If not cancelled, SOS will automatically execute when timer reaches 0s.
+                        </p>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <button
+                                type="button"
+                                onClick={() => { executeActualSOS(); setShowSosModal(false); }}
+                                className="action-btn"
+                                style={{ background: 'linear-gradient(90deg, #d32f2f 0%, #ff416c 100%)', padding: '14px', fontSize: '1rem', width: '100%' }}
+                            >
+                                🚨 Confirm & Send SOS Now
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setShowSosModal(false)}
+                                className="action-btn"
+                                style={{ background: '#78909c', padding: '12px', fontSize: '0.9rem', width: '100%' }}
+                            >
+                                ❌ Cancel SOS
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Tourist Dashboard Animated Bottom Glassmorphism Navigation Bar */}
+            <nav className="bottom-nav-bar">
+                <button
+                    type="button"
+                    onClick={() => setTouristTab('map')}
+                    className={`bottom-nav-item ${touristTab === 'map' ? 'active' : ''}`}
+                >
+                    <span className="bottom-nav-item-icon">🗺️</span>
+                    <span>Safety Map</span>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setTouristTab('account')}
+                    className={`bottom-nav-item ${touristTab === 'account' ? 'active' : ''}`}
+                >
+                    <span className="bottom-nav-item-icon">👤</span>
+                    <span>My Account</span>
+                </button>
+            </nav>
         </div>
     );
 }
@@ -1516,6 +1661,7 @@ function AdminDashboard({ user, logout }) {
     const [mapCenter, setMapCenter] = useState([20.5937, 78.9629]);
     const [searchQuery, setSearchQuery] = useState('');
     const [adminMapTileStyle, setAdminMapTileStyle] = useState('google_hybrid');
+    const [adminTab, setAdminTab] = useState('map');
 
     const filteredUsers = Array.isArray(users) ? users.filter(u =>
         (u.name && u.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -1647,7 +1793,7 @@ function AdminDashboard({ user, logout }) {
     };
 
     return (
-        <div className="gradient-bg">
+        <div className="gradient-bg" style={{ paddingBottom: '75px' }}>
             <nav className="glass-navbar fade-in">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <img src="/logo.png" alt="Logo" style={{ width: '34px', height: '34px', borderRadius: '6px' }} />
@@ -1659,12 +1805,26 @@ function AdminDashboard({ user, logout }) {
                 </div>
             </nav>
 
-            <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 12px', display: 'flex', flexWrap: 'wrap', gap: '15px' }}>
-                <div style={{ flex: '1 1 500px', minWidth: '0', maxWidth: '100%' }} className="grid-col-left">
+            {/* Tab 1: Live Satellite Map & GPS Search */}
+            {adminTab === 'map' ? (
+                <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 12px' }} className="fade-in">
 
-                    {/* Live Selected Tourist Intelligence Card (Location + Place Risk + Weather) */}
+                    {/* Top Search Input Box with Enter Key Auto-Zoom */}
+                    <div className="hover-card fade-in" style={{ background: '#ffffff', borderRadius: '12px', padding: '12px', marginBottom: '12px', borderLeft: '4px solid #1e3c72' }}>
+                        <input
+                            type="text"
+                            className="modern-input"
+                            placeholder="🔍 Type Tourist Name / Email & Press Enter to Auto-Zoom Map..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyDown={handleSearchKeyDown}
+                            style={{ margin: 0, padding: '10px 14px', borderRadius: '20px', fontSize: '0.9rem' }}
+                        />
+                    </div>
+
+                    {/* Selected Tourist Deep Intelligence Panel */}
                     {selectedUser && (
-                        <div className="hover-card fade-in delay-1" style={{ background: '#ffffff', borderRadius: '12px', padding: '12px 16px', marginBottom: '10px', borderTop: '4px solid #1e3c72' }}>
+                        <div className="hover-card fade-in delay-1" style={{ background: '#ffffff', borderRadius: '12px', padding: '14px', marginBottom: '12px', borderTop: '4px solid #1e3c72' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
                                 <div>
                                     <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#1e3c72' }}>🎯 Live Monitoring: {selectedUser.name}</h3>
@@ -1675,8 +1835,7 @@ function AdminDashboard({ user, logout }) {
                                 </span>
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px', marginTop: '8px' }}>
-                                {/* Location Risk Assessment */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px', marginTop: '10px' }}>
                                 <div style={{ background: userZoneRisk ? '#ffebee' : '#e8f5e9', padding: '8px 10px', borderRadius: '8px', borderLeft: userZoneRisk ? '4px solid #d32f2f' : '4px solid #2e7d32' }}>
                                     <strong style={{ fontSize: '0.8rem', color: userZoneRisk ? '#c62828' : '#2e7d32' }}>
                                         {userZoneRisk ? `🚨 Danger Zone: ${userZoneRisk.name}` : '🟢 Location: Safe Tourist Area'}
@@ -1693,7 +1852,6 @@ function AdminDashboard({ user, logout }) {
                                     )}
                                 </div>
 
-                                {/* Live Weather at Tourist's Location */}
                                 <div style={{ background: 'linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)', color: '#1e3c72', padding: '8px 10px', borderRadius: '8px' }}>
                                     <strong style={{ fontSize: '0.8rem' }}>🌤️ Weather at Tourist's Location</strong>
                                     {userWeather ? (
@@ -1730,7 +1888,7 @@ function AdminDashboard({ user, logout }) {
                     </div>
 
                     <div className="map-wrapper fade-in delay-1">
-                        <MapContainer center={mapCenter} zoom={13} style={{ height: '390px', width: '100%' }}>
+                        <MapContainer center={mapCenter} zoom={13} style={{ height: '440px', width: '100%' }}>
                             <TileLayer
                                 url={
                                     adminMapTileStyle === 'google_hybrid'
@@ -1756,66 +1914,97 @@ function AdminDashboard({ user, logout }) {
                         </MapContainer>
                     </div>
                 </div>
+            ) : (
+                /* Tab 2: Registered Tourists & Active Alerts View */
+                <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 12px', display: 'flex', flexWrap: 'wrap', gap: '15px' }} className="fade-in">
+                    <div style={{ flex: '1 1 500px', minWidth: '0', maxWidth: '100%' }}>
+                        <div className="hover-card fade-in">
+                            <h3 style={{ marginTop: 0, fontSize: '1.1rem' }}>📋 Registered Tourists Directory ({filteredUsers.length})</h3>
 
-                <div style={{ flex: '1 1 320px', minWidth: '0', maxWidth: '100%' }} className="grid-col-right">
-                    <div className="hover-card fade-in delay-2">
-                        <h3 style={{ marginTop: 0, fontSize: '1.1rem' }}>📋 Registered Tourists ({filteredUsers.length})</h3>
+                            <div style={{ marginBottom: '12px' }}>
+                                <input
+                                    type="text"
+                                    className="modern-input"
+                                    placeholder="🔍 Search Tourist by Name / Email..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    style={{ margin: 0, padding: '8px 12px', fontSize: '0.85rem', borderRadius: '18px' }}
+                                />
+                            </div>
 
-                        {/* Instant Search Box with Enter Key Auto-Select */}
-                        <div style={{ marginBottom: '12px' }}>
-                            <input
-                                type="text"
-                                className="modern-input"
-                                placeholder="🔍 Type Tourist Name & Press Enter..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                onKeyDown={handleSearchKeyDown}
-                                style={{ margin: 0, padding: '8px 12px', fontSize: '0.85rem', borderRadius: '18px' }}
-                            />
+                            <ul style={{ listStyle: 'none', padding: 0, maxHeight: '350px', overflowY: 'auto' }}>
+                                {filteredUsers.length === 0 ? (
+                                    <p style={{ color: '#888', fontSize: '0.85rem' }}>No matching tourists found.</p>
+                                ) : (
+                                    filteredUsers.map((u) => (
+                                        <li
+                                            key={u.id || u._id}
+                                            style={{ padding: '10px', borderBottom: '1px solid #eee', cursor: 'pointer', background: selectedUser && (selectedUser.id === u.id || selectedUser._id === u._id) ? '#e3f2fd' : 'transparent', borderRadius: '8px', marginBottom: '6px' }}
+                                            onClick={() => { handleUserClick(u); setAdminTab('map'); }}
+                                        >
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div>
+                                                    <strong style={{ fontSize: '0.95rem', color: '#1e3c72' }}>{u.name}</strong>
+                                                    <br /><small style={{ color: '#555' }}>📧 {u.email} | 📞 {u.phone || 'N/A'}</small>
+                                                </div>
+                                                <button className="action-btn" style={{ padding: '4px 8px', fontSize: '0.75rem' }}>
+                                                    🎯 Locate on Map ➔
+                                                </button>
+                                            </div>
+                                        </li>
+                                    ))
+                                )}
+                            </ul>
                         </div>
-
-                        <ul style={{ listStyle: 'none', padding: 0, maxHeight: '200px', overflowY: 'auto' }}>
-                            {filteredUsers.length === 0 ? (
-                                <p style={{ color: '#888', fontSize: '0.85rem' }}>No matching tourists found.</p>
-                            ) : (
-                                filteredUsers.map((u) => (
-                                    <li key={u.id || u._id} style={{ padding: '8px', borderBottom: '1px solid #eee', cursor: 'pointer', background: selectedUser && (selectedUser.id === u.id || selectedUser._id === u._id) ? '#e3f2fd' : 'transparent', borderRadius: '6px' }} onClick={() => handleUserClick(u)}>
-                                        <strong style={{ fontSize: '0.95rem', color: '#1e3c72' }}>{u.name}</strong><br />
-                                        <small style={{ color: '#555' }}>{u.email}</small><br />
-                                        <small style={{ color: u.lastLocation ? '#2e7d32' : '#888', fontWeight: u.lastLocation ? 'bold' : 'normal' }}>
-                                            📍 Last loc: {u.lastLocation && u.lastLocation.lat ? `${u.lastLocation.lat.toFixed(4)}, ${u.lastLocation.lng.toFixed(4)}` : 'Unknown'}
-                                        </small>
-                                    </li>
-                                ))
-                            )}
-                        </ul>
                     </div>
 
-                    {selectedUser && (
-                        <div className="hover-card fade-in delay-3">
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <h3 style={{ marginTop: 0, marginBottom: 0, fontSize: '1rem' }}>📢 Alerts: {selectedUser.name}</h3>
-                                <button onClick={() => fetchUserAlerts(selectedUser.id || selectedUser._id)} className="action-btn" style={{ padding: '4px 8px', fontSize: '0.75rem' }}>Refresh</button>
-                            </div>
-                            <hr style={{ border: 'none', borderTop: '1px solid #eee', margin: '10px 0' }} />
-
-                            {!Array.isArray(userAlerts) || userAlerts.length === 0 ? (
-                                <p style={{ color: '#888', fontSize: '0.85rem' }}>No alerts recorded.</p>
-                            ) : (
-                                <div style={{ maxHeight: '180px', overflowY: 'auto' }}>
-                                    {userAlerts.map((alert) => (
-                                        <div key={alert._id} className="alert-item">
-                                            <strong style={{ color: '#d32f2f' }}>{alert.type ? alert.type.toUpperCase() : 'ALERT'}</strong> - {alert.message}<br />
-                                            <small>📍 {alert.location ? `${alert.location.lat.toFixed(4)}, ${alert.location.lng.toFixed(4)}` : 'N/A'}</small><br />
-                                            <small style={{ color: '#666' }}>🕒 {new Date(alert.createdAt).toLocaleTimeString()}</small>
-                                        </div>
-                                    ))}
+                    <div style={{ flex: '1 1 320px', minWidth: '0', maxWidth: '100%' }}>
+                        {selectedUser && (
+                            <div className="hover-card fade-in delay-1" style={{ borderLeft: '4px solid #1e3c72' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <h3 style={{ marginTop: 0, marginBottom: 0, fontSize: '1rem', color: '#1e3c72' }}>📢 Alerts Log: {selectedUser.name}</h3>
+                                    <button onClick={() => fetchUserAlerts(selectedUser.id || selectedUser._id)} className="action-btn" style={{ padding: '4px 8px', fontSize: '0.75rem' }}>Refresh</button>
                                 </div>
-                            )}
-                        </div>
-                    )}
+                                <hr style={{ border: 'none', borderTop: '1px solid #eee', margin: '10px 0' }} />
+
+                                {!Array.isArray(userAlerts) || userAlerts.length === 0 ? (
+                                    <p style={{ color: '#888', fontSize: '0.85rem' }}>No alerts recorded for this tourist.</p>
+                                ) : (
+                                    <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
+                                        {userAlerts.map((alert) => (
+                                            <div key={alert._id} className="alert-item">
+                                                <strong style={{ color: '#d32f2f' }}>{alert.type ? alert.type.toUpperCase() : 'ALERT'}</strong> - {alert.message}<br />
+                                                <small>📍 {alert.location ? `${alert.location.lat.toFixed(4)}, ${alert.location.lng.toFixed(4)}` : 'N/A'}</small><br />
+                                                <small style={{ color: '#666' }}>🕒 {new Date(alert.createdAt).toLocaleTimeString()}</small>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </div>
+            )}
+
+            {/* Admin Dashboard Animated Glassmorphism Bottom Navigation Bar */}
+            <nav className="bottom-nav-bar">
+                <button
+                    type="button"
+                    onClick={() => setAdminTab('map')}
+                    className={`bottom-nav-item ${adminTab === 'map' ? 'active' : ''}`}
+                >
+                    <span className="bottom-nav-item-icon">🛰️</span>
+                    <span>Live Map & GPS</span>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setAdminTab('tourists')}
+                    className={`bottom-nav-item ${adminTab === 'tourists' ? 'active' : ''}`}
+                >
+                    <span className="bottom-nav-item-icon">📋</span>
+                    <span>Tourists & Alerts</span>
+                </button>
+            </nav>
         </div>
     );
 }
