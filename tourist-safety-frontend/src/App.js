@@ -644,6 +644,7 @@ function TouristDashboard({ user, logout }) {
     const [searchResults, setSearchResults] = useState([]);
     const [isSearchingDest, setIsSearchingDest] = useState(false);
     const [touristTab, setTouristTab] = useState('map');
+    const [aiSuggestedPlace, setAiSuggestedPlace] = useState(null);
     const [blockchainHash, setBlockchainHash] = useState('');
     const [identity, setIdentity] = useState(null);
     const [weatherData, setWeatherData] = useState(null);
@@ -902,19 +903,59 @@ function TouristDashboard({ user, logout }) {
     };
 
     const sendChatMessage = async() => {
-        if (!chatMessage.trim()) return;
-        try {
-            const res = await fetch(`${BACKEND_URL}/api/ai/chat`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
-                body: JSON.stringify({ message: chatMessage })
-            });
-            const data = await res.json();
-            let reply = data.reply;
-            if (language !== 'en') reply = await translateText(reply);
-            setChatReply(reply);
-            setChatMessage('');
-        } catch (err) {}
+        const msg = chatMessage.trim();
+        if (!msg) return;
+
+        const lowerMsg = msg.toLowerCase();
+        let replyText = "";
+        let detectedPlace = null;
+
+        if (lowerMsg.includes('hospital') || lowerMsg.includes('doctor') || lowerMsg.includes('medical') || lowerMsg.includes('மருத்துவமனை')) {
+            detectedPlace = { name: "Munnar General Hospital", lat: 10.0890, lng: 77.0597 };
+            replyText = language === 'ta'
+                ? `🤖 தோழன் AI: உங்களுக்கு அருகில் உள்ள மருத்துவமனை: "மூணார் அரசு மருத்துவமனை" (தூரம்: 1.2 கி.மீ). அவசர உதவிக்கு 108 ஐயும் அழைக்கலாம்.`
+                : `🤖 Thozhan AI: Nearest medical facility is "Munnar General Hospital" (1.2 km away). For emergency ambulance call 108.`;
+        } else if (lowerMsg.includes('police') || lowerMsg.includes('station') || lowerMsg.includes('காவல் நிலைய') || lowerMsg.includes('போலீஸ்')) {
+            detectedPlace = { name: "Munnar Police Station", lat: 10.0881, lng: 77.0601 };
+            replyText = language === 'ta'
+                ? `🤖 தோழன் AI: உங்களுக்கு அருகில் உள்ள காவல் நிலையம்: "மூணார் காவல் நிலையம்" (தூரம்: 0.9 கி.மீ). அவசர உதவிக்கு 100 ஐ அழைக்கலாம்.`
+                : `🤖 Thozhan AI: Nearest police station is "Munnar Police Station" (0.9 km away). For immediate police help call 100.`;
+        } else if (lowerMsg.includes('bus') || lowerMsg.includes('stand') || lowerMsg.includes('பேருந்து நிலையம்')) {
+            detectedPlace = { name: "Munnar KSRTC Bus Stand", lat: 10.0872, lng: 77.0620 };
+            replyText = language === 'ta'
+                ? `🤖 தோழன் AI: உங்களுக்கு அருகில் உள்ள பேருந்து நிலையம்: "மூணார் கே.எஸ்.ஆர்.டி.சி பேருந்து நிலையம்" (தூரம்: 1.5 கி.மீ).`
+                : `🤖 Thozhan AI: Nearest bus station is "Munnar KSRTC Bus Stand" (1.5 km away).`;
+        } else if (lowerMsg.includes('waterfall') || lowerMsg.includes('iraichilpara') || lowerMsg.includes('நீர்வீழ்ச்சி')) {
+            detectedPlace = { name: "Iraichilpara Waterfalls", lat: 10.0520, lng: 77.0680 };
+            replyText = language === 'ta'
+                ? `🤖 தோழன் AI: "இறைச்சில்பாறை நீர்வீழ்ச்சி" ஆபத்து அளவு: 75/100 (மிக அதிகம்). வழுக்கும் பாறைகள் உள்ளன. கவனமாகச் செல்லவும்.`
+                : `🤖 Thozhan AI: "Iraichilpara Waterfalls" Risk Score: 75/100 (VERY HIGH). Beware of slippery rocks.`;
+        } else if (lowerMsg.includes('shop') || lowerMsg.includes('hotel') || lowerMsg.includes('restaurant') || lowerMsg.includes('கடை') || lowerMsg.includes('சாப்பாடு')) {
+            detectedPlace = { name: "Munnar Central Market & Hotels", lat: 10.0895, lng: 77.0610 };
+            replyText = language === 'ta'
+                ? `🤖 தோழன் AI: அருகில் உள்ள கடைகள் மற்றும் உணவகங்கள்: "மூணார் சென்ட்ரல் மார்க்கெட் பகுதி" (தூரம்: 0.8 கி.மீ).`
+                : `🤖 Thozhan AI: Nearest shops and restaurants are at "Munnar Central Market Area" (0.8 km away).`;
+        } else {
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/ai/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
+                    body: JSON.stringify({ message: msg })
+                });
+                const data = await res.json();
+                replyText = data.reply;
+                if (language !== 'en') replyText = await translateText(replyText);
+            } catch (err) {
+                replyText = language === 'ta'
+                    ? `🤖 தோழன் AI: நான் உங்களுக்கு பாதுகாப்பான வழித்தடங்கள், மருத்துவமனை, காவல் நிலையம் மற்றும் ஆபத்தான பகுதிகளைக் காட்ட முடியும்.`
+                    : `🤖 Thozhan AI: I can help you locate nearby hospitals, police stations, safe zones, and danger areas.`;
+            }
+        }
+
+        setChatReply(replyText);
+        setAiSuggestedPlace(detectedPlace);
+        setChatMessage('');
+        speakSpeech(replyText, language);
     };
 
     const playVoiceStatus = () => {
@@ -1356,10 +1397,53 @@ function TouristDashboard({ user, logout }) {
                     )}
 
                     <div className="hover-card fade-in delay-2">
-                        <h3 style={{ marginTop: 0, fontSize: '1.05rem' }}>🤖 Thozhan AI Assistant</h3>
-                        <div className="chat-box">{chatReply || 'Thozhan: Hi! Ask me about safe zones, danger areas, or SOS features.'}</div>
+                        <h3 style={{ marginTop: 0, fontSize: '1.05rem', color: '#1e3c72' }}>🤖 Thozhan AI Assistant</h3>
+                        <div className="chat-box">{chatReply || 'Thozhan: Hi! Ask me about nearby hospitals, police stations, bus stands, shops, or danger areas.'}</div>
+
+                        {/* Interactive Location Permission Prompt */}
+                        {aiSuggestedPlace && (
+                            <div style={{ margin: '10px 0', background: '#e3f2fd', padding: '10px 12px', borderRadius: '8px', borderLeft: '4px solid #1e3c72' }}>
+                                <p style={{ margin: '0 0 8px 0', fontSize: '0.82rem', fontWeight: 'bold', color: '#1e3c72' }}>
+                                    🧭 🤖 Thozhan: Shall I plot the roadmap to "{aiSuggestedPlace.name}" on your Google Satellite Map?
+                                </p>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            handleStartNavigation({
+                                                name: aiSuggestedPlace.name,
+                                                center: { lat: aiSuggestedPlace.lat, lng: aiSuggestedPlace.lng },
+                                                coordinates: [[aiSuggestedPlace.lat, aiSuggestedPlace.lng]]
+                                            });
+                                            setAiSuggestedPlace(null);
+                                        }}
+                                        className="action-btn"
+                                        style={{ background: '#25D366', padding: '6px 12px', fontSize: '0.8rem' }}
+                                    >
+                                        ✅ Yes, Plot Roadmap
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setAiSuggestedPlace(null)}
+                                        className="action-btn"
+                                        style={{ background: '#ff416c', padding: '6px 12px', fontSize: '0.8rem' }}
+                                    >
+                                        ❌ Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
                         <div style={{ display: 'flex', gap: '8px' }}>
-                            <input className="modern-input" style={{ margin: 0 }} type="text" value={chatMessage} onChange={(e) => setChatMessage(e.target.value)} placeholder="Ask Thozhan..." />
+                            <input
+                                className="modern-input"
+                                style={{ margin: 0 }}
+                                type="text"
+                                value={chatMessage}
+                                onChange={(e) => setChatMessage(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === 'Enter') sendChatMessage(); }}
+                                placeholder="Ask Thozhan (e.g. Nearest hospital, police station)..."
+                            />
                             <button onClick={sendChatMessage} className="action-btn" style={{ whiteSpace: 'nowrap' }}>Send</button>
                         </div>
                     </div>
