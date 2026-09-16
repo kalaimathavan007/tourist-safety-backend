@@ -30,34 +30,51 @@ const globalStyles = `
     transition: background 0.8s ease-in-out;
   }
 
-  /* Nature & Forest Green Theme Animations */
+  /* Nature, Forest & Wildlife Location Animations */
   .nature-bg {
-    background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%) !important;
+    background: linear-gradient(135deg, #0b231a 0%, #11432e 50%, #1e3c72 100%) !important;
     animation: natureBreeze 8s ease-in-out infinite alternate;
   }
-  @keyframes natureBreeze {
-    0% { filter: hue-rotate(0deg) brightness(1); }
-    100% { filter: hue-rotate(20deg) brightness(1.1); }
+  .nature-water-bg {
+    background: linear-gradient(135deg, #00223e 0%, #1d976c 100%) !important;
+    animation: waterWave 6s ease-in-out infinite alternate;
+  }
+  .nature-forest-bg {
+    background: linear-gradient(135deg, #134e5e 0%, #71b280 100%) !important;
+    animation: forestPulse 7s ease-in-out infinite alternate;
   }
 
-  /* Dark Theme Night Mode */
+  @keyframes natureBreeze {
+    0% { filter: hue-rotate(0deg) brightness(0.98); }
+    100% { filter: hue-rotate(18deg) brightness(1.1); }
+  }
+  @keyframes waterWave {
+    0% { filter: brightness(1) saturate(1.1); }
+    100% { filter: brightness(1.12) saturate(1.3); }
+  }
+  @keyframes forestPulse {
+    0% { filter: contrast(1); }
+    100% { filter: contrast(1.15); }
+  }
+
+  /* Full Dark Night Theme */
   .dark-theme {
-    background: #121820 !important;
-    color: #f0f0f0 !important;
+    background: #0d1117 !important;
+    color: #e6edf3 !important;
   }
   .dark-theme .hover-card {
-    background: #1e2630 !important;
-    color: #ffffff !important;
+    background: #161b22 !important;
+    color: #f0f6fc !important;
     border-top-color: #38ef7d !important;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.6) !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.7) !important;
   }
   .dark-theme .modern-input {
-    background: #2a3440 !important;
+    background: #21262d !important;
     color: #ffffff !important;
-    border-color: #445460 !important;
+    border-color: #30363d !important;
   }
   .dark-theme .glass-navbar {
-    background: linear-gradient(90deg, #0a1118 0%, #1a2632 100%) !important;
+    background: linear-gradient(90deg, #010409 0%, #0d1117 100%) !important;
   }
   .weather-bg-clear {
     background: linear-gradient(135deg, #fceabb 0%, #f8b500 50%, #2a5298 100%) !important;
@@ -1800,7 +1817,15 @@ function TouristDashboard({ user, logout }) {
                     className={`bottom-nav-item ${touristTab === 'account' ? 'active' : ''}`}
                 >
                     <span className="bottom-nav-item-icon">👤</span>
-                    <span>My Account</span>
+                    <span>Profile</span>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setTouristTab('settings')}
+                    className={`bottom-nav-item ${touristTab === 'settings' ? 'active' : ''}`}
+                >
+                    <span className="bottom-nav-item-icon">⚙️</span>
+                    <span>Settings</span>
                 </button>
             </nav>
         </div>
