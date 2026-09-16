@@ -30,10 +30,34 @@ const globalStyles = `
     transition: background 0.8s ease-in-out;
   }
 
-  /* Weather-Adaptive Dynamic Background Themes */
-  .weather-bg-rain {
-    background: linear-gradient(135deg, #232526 0%, #414345 50%, #1e3c72 100%) !important;
-    animation: rainPulse 4s ease-in-out infinite alternate;
+  /* Nature & Forest Green Theme Animations */
+  .nature-bg {
+    background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%) !important;
+    animation: natureBreeze 8s ease-in-out infinite alternate;
+  }
+  @keyframes natureBreeze {
+    0% { filter: hue-rotate(0deg) brightness(1); }
+    100% { filter: hue-rotate(20deg) brightness(1.1); }
+  }
+
+  /* Dark Theme Night Mode */
+  .dark-theme {
+    background: #121820 !important;
+    color: #f0f0f0 !important;
+  }
+  .dark-theme .hover-card {
+    background: #1e2630 !important;
+    color: #ffffff !important;
+    border-top-color: #38ef7d !important;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.6) !important;
+  }
+  .dark-theme .modern-input {
+    background: #2a3440 !important;
+    color: #ffffff !important;
+    border-color: #445460 !important;
+  }
+  .dark-theme .glass-navbar {
+    background: linear-gradient(90deg, #0a1118 0%, #1a2632 100%) !important;
   }
   .weather-bg-clear {
     background: linear-gradient(135deg, #fceabb 0%, #f8b500 50%, #2a5298 100%) !important;
@@ -726,6 +750,30 @@ function TouristDashboard({ user, logout }) {
     const [lastAnomalyTime, setLastAnomalyTime] = useState(0);
     const [showSosModal, setShowSosModal] = useState(false);
     const [sosTimer, setSosTimer] = useState(30);
+    const [isDarkMode, setIsDarkMode] = useState(false);
+    const [profilePhoto, setProfilePhoto] = useState(localStorage.getItem('userAvatar') || '');
+    const [userHometown, setUserHometown] = useState(localStorage.getItem('userHometown') || 'Kovilpatti, Tamil Nadu');
+    const [showManualModal, setShowManualModal] = useState(false);
+
+    const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setProfilePhoto(reader.result);
+                localStorage.setItem('userAvatar', reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleUpdateHometown = () => {
+        const newTown = prompt('Enter your Hometown / Place (சொந்த ஊர்):', userHometown);
+        if (newTown && newTown.trim()) {
+            setUserHometown(newTown.trim());
+            localStorage.setItem('userHometown', newTown.trim());
+        }
+    };
 
     // Fetch Real-time Live Weather automatically based on Tourist GPS Location
     useEffect(() => {
@@ -1218,17 +1266,32 @@ function TouristDashboard({ user, logout }) {
             {touristTab === 'account' ? (
                 <div style={{ maxWidth: '600px', margin: '0 auto', width: '100%', padding: '0 12px' }} className="fade-in">
 
-                    {/* Instagram Header Banner & Avatar Card */}
+                    {/* Instagram Header Banner & Photo Upload Avatar Card */}
                     <div className="hover-card" style={{ background: '#ffffff', borderRadius: '20px', padding: '24px 20px', textAlign: 'center', boxShadow: '0 8px 25px rgba(0,0,0,0.08)' }}>
-                        <div style={{ width: '85px', height: '85px', borderRadius: '50%', background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.2rem', fontWeight: 'bold', margin: '0 auto 12px auto', border: '4px solid #ffffff', boxShadow: '0 4px 15px rgba(30,60,114,0.3)' }}>
-                            {user && user.name ? user.name.charAt(0).toUpperCase() : 'T'}
+
+                        {/* Interactive Photo Avatar Selector */}
+                        <div style={{ position: 'relative', width: '90px', height: '90px', margin: '0 auto 12px auto' }}>
+                            {profilePhoto ? (
+                                <img src={profilePhoto} alt="Profile Avatar" style={{ width: '90px', height: '90px', borderRadius: '50%', objectFit: 'cover', border: '4px solid #ffffff', boxShadow: '0 4px 15px rgba(30,60,114,0.3)' }} />
+                            ) : (
+                                <div style={{ width: '90px', height: '90px', borderRadius: '50%', background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.2rem', fontWeight: 'bold', border: '4px solid #ffffff', boxShadow: '0 4px 15px rgba(30,60,114,0.3)' }}>
+                                    {user && user.name ? user.name.charAt(0).toUpperCase() : 'T'}
+                                </div>
+                            )}
+                            <label htmlFor="avatar-upload" style={{ position: 'absolute', bottom: '0', right: '0', background: '#25D366', color: 'white', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.2)', fontSize: '0.8rem' }} title="Change Profile Photo">
+                                📷
+                            </label>
+                            <input id="avatar-upload" type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
                         </div>
 
                         <h2 style={{ margin: '4px 0 2px 0', fontSize: '1.4rem', color: '#1e3c72' }}>
                             {user ? user.name : 'Tourist'} <span style={{ color: '#25D366', fontSize: '1.1rem' }}>☑️</span>
                         </h2>
-                        <p style={{ margin: '0 0 12px 0', fontSize: '0.9rem', color: '#666', fontWeight: '500' }}>
-                            📍 {user ? (user.place || 'Kerala Tourist') : 'Tamil Nadu, India'}
+
+                        {/* Editable Hometown / Place (ஊர்) */}
+                        <p style={{ margin: '0 0 12px 0', fontSize: '0.9rem', color: '#555', fontWeight: '500' }}>
+                            📍 Hometown (சொந்த ஊர்): <strong>{userHometown}</strong> &nbsp;
+                            <span onClick={handleUpdateHometown} style={{ cursor: 'pointer', color: '#1e3c72', fontWeight: 'bold', textDecoration: 'underline', fontSize: '0.8rem' }}>✏️ Edit</span>
                         </p>
 
                         {/* Instagram Style Stats Bar */}
@@ -1273,23 +1336,39 @@ function TouristDashboard({ user, logout }) {
                         </div>
                     </div>
 
-                    {/* Personal Details Card */}
+                    {/* Settings & App User Manual Card */}
                     <div className="hover-card delay-2" style={{ background: '#ffffff', borderRadius: '16px', padding: '18px' }}>
-                        <h3 style={{ margin: '0 0 12px 0', fontSize: '1.05rem', color: '#1e3c72' }}>👤 Tourist Personal Details</h3>
-                        <div style={{ background: '#f8f9fa', padding: '12px', borderRadius: '10px', fontSize: '0.9rem' }}>
-                            <p style={{ margin: '6px 0' }}><strong>Full Name:</strong> {user ? user.name : 'Tourist'}</p>
-                            <p style={{ margin: '6px 0' }}><strong>Email Address:</strong> {user ? user.email : 'N/A'}</p>
-                            <p style={{ margin: '6px 0' }}><strong>Phone Number:</strong> {user ? user.phone || 'N/A' : 'N/A'}</p>
-                            <p style={{ margin: '6px 0' }}><strong>Hometown / Place (ஊர்):</strong> {user ? (user.place || 'Kerala Tourist Spot') : 'Tamil Nadu, India'}</p>
-                        </div>
-                    </div>
-
-                    {/* Settings & Preferences Card */}
-                    <div className="hover-card delay-3" style={{ background: '#ffffff', borderRadius: '16px', padding: '18px' }}>
-                        <h3 style={{ margin: '0 0 12px 0', fontSize: '1.05rem', color: '#1e3c72' }}>⚙️ Account Settings & Preferences</h3>
+                        <h3 style={{ margin: '0 0 14px 0', fontSize: '1.05rem', color: '#1e3c72' }}>⚙️ Settings & Preferences</h3>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: '#f8f9fa', borderRadius: '8px' }}>
+                            {/* Day / Night Theme Switcher */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f8f9fa', borderRadius: '10px' }}>
+                                <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>🌓 App Day / Night Theme</span>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsDarkMode(!isDarkMode)}
+                                    className="action-btn"
+                                    style={{ background: isDarkMode ? '#ffd54f' : '#1e3c72', color: isDarkMode ? '#121212' : '#ffffff', padding: '6px 14px', fontSize: '0.82rem' }}
+                                >
+                                    {isDarkMode ? '☀️ Day Mode' : '🌙 Dark Night Mode'}
+                                </button>
+                            </div>
+
+                            {/* App User Manual Button */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f8f9fa', borderRadius: '10px' }}>
+                                <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>📖 App User Manual (வழிகாட்டி)</span>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowManualModal(true)}
+                                    className="action-btn"
+                                    style={{ background: '#38ef7d', color: '#0f2027', padding: '6px 14px', fontSize: '0.82rem', fontWeight: 'bold' }}
+                                >
+                                    📖 Open Manual
+                                </button>
+                            </div>
+
+                            {/* Preferred Language */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f8f9fa', borderRadius: '10px' }}>
                                 <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>🌐 Preferred Language</span>
                                 <select className="modern-input" value={language} onChange={(e) => setLanguage(e.target.value)} style={{ width: 'auto', margin: 0, padding: '6px 10px', fontSize: '0.85rem' }}>
                                     <option value="en">🇬🇧 English</option>
@@ -1299,14 +1378,16 @@ function TouristDashboard({ user, logout }) {
                                 </select>
                             </div>
 
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: '#f8f9fa', borderRadius: '8px' }}>
+                            {/* AI Voice Safety Test */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f8f9fa', borderRadius: '10px' }}>
                                 <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>🔊 AI Voice Safety Assistant</span>
                                 <button onClick={playVoiceStatus} className="action-btn" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
                                     Test Voice 🔊
                                 </button>
                             </div>
 
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: '#f8f9fa', borderRadius: '8px' }}>
+                            {/* Geofence Safety Alerts */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f8f9fa', borderRadius: '10px' }}>
                                 <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>🔔 Geofence Safety Alerts</span>
                                 <span style={{ color: '#2e7d32', fontWeight: 'bold', fontSize: '0.85rem' }}>🟢 Enabled (1-Time Alert)</span>
                             </div>
@@ -1649,6 +1730,56 @@ function TouristDashboard({ user, logout }) {
                                 ❌ Cancel SOS
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* App User Manual (பயன்பாட்டு வழிகாட்டி) Modal */}
+            {showManualModal && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+                    background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(6px)',
+                    display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 999999, padding: '16px'
+                }} className="fade-in">
+                    <div style={{
+                        background: '#ffffff', borderRadius: '20px', padding: '24px 20px', maxWidth: '520px', width: '100%',
+                        maxHeight: '85vh', overflowY: 'auto', border: '3px solid #1e3c72', color: '#333'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #eee', paddingBottom: '10px' }}>
+                            <h3 style={{ margin: 0, color: '#1e3c72', fontSize: '1.2rem' }}>📖 App User Manual (பயன்பாட்டு வழிகாட்டி)</h3>
+                            <button onClick={() => setShowManualModal(false)} className="action-btn" style={{ background: '#ff416c', padding: '4px 10px', fontSize: '0.8rem' }}>❌ Close</button>
+                        </div>
+
+                        <div style={{ marginTop: '14px', fontSize: '0.88rem', lineHeight: '1.6' }}>
+                            <p style={{ background: '#e3f2fd', padding: '10px', borderRadius: '8px' }}>
+                                <strong>🗺️ 1. Live Google Satellite Map & Navigation:</strong><br />
+                                உலகின் எந்தவொரு இடத்தையும் (e.g. Kovilpatti, Munnar Tea Museum) தேடலாம். OSRM ரோட்மேப் மூலமாக நேரலைச் சாலைக் கோடு தோன்றும்.
+                            </p>
+
+                            <p style={{ background: '#ffebee', padding: '10px', borderRadius: '8px' }}>
+                                <strong>🚨 2. 30-Second Emergency SOS:</strong><br />
+                                SOS பட்டனை அழுத்தியதும் 30 விநாடி கவுண்டவுன் ஓடும். ரத்து செய்யாவிட்டால் 0s-ல் தானாகவே அவசர எச்சரிக்கை அனுப்பப்படும்.
+                            </p>
+
+                            <p style={{ background: '#e8f5e9', padding: '10px', borderRadius: '8px' }}>
+                                <strong>🔊 3. AI Voice Assistant:</strong><br />
+                                தோழன் AI-யிடம் அருகில் உள்ள மருத்துவமனை, காவல் நிலையம் பற்றிக் கேட்டால், அது அனுமதி கேட்டு மேப்பில் ரோட்மேப் போடும்.
+                            </p>
+
+                            <p style={{ background: '#fff3e0', padding: '10px', borderRadius: '8px' }}>
+                                <strong>🪪 4. Digital Verification ID Pass:</strong><br />
+                                அதிகாரிகள் அல்லது போலிசார் கேட்கும் போது இந்த QR Code Badge-ஐ காட்டி சரிபார்க்கலாம்.
+                            </p>
+
+                            <p style={{ background: '#f3e5f5', padding: '10px', borderRadius: '8px' }}>
+                                <strong>🌓 5. Day & Night Mode Theme:</strong><br />
+                                Settings பக்கத்தில் `Day Mode` அல்லது `Dark Night Mode`-க்கு மாற்றிக்கொள்ளலாம்.
+                            </p>
+                        </div>
+
+                        <button onClick={() => setShowManualModal(false)} className="action-btn" style={{ width: '100%', marginTop: '16px', padding: '12px', fontSize: '0.95rem' }}>
+                            Got It! (புரிந்தது)
+                        </button>
                     </div>
                 </div>
             )}
