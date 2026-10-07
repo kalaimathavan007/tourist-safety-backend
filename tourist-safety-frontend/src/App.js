@@ -761,6 +761,8 @@ function TouristDashboard({ user, logout }) {
     const [isSearchingDest, setIsSearchingDest] = useState(false);
     const [touristTab, setTouristTab] = useState('map');
     const [aiSuggestedPlace, setAiSuggestedPlace] = useState(null);
+    const [aiGender, setAiGender] = useState(localStorage.getItem('thozhanGender') || 'male');
+    const [showAiMascotModal, setShowAiMascotModal] = useState(false);
     const [blockchainHash, setBlockchainHash] = useState('');
     const [identity, setIdentity] = useState(null);
     const [weatherData, setWeatherData] = useState(null);
@@ -1065,6 +1067,33 @@ function TouristDashboard({ user, logout }) {
         } catch { return text; }
     };
 
+    const speakThozhanVoice = (text, lang = 'en', gender = 'male') => {
+        if (!('speechSynthesis' in window)) return;
+        try {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            const voices = window.speechSynthesis.getVoices();
+            const targetLang = lang === 'ta' ? 'ta' : lang === 'hi' ? 'hi' : lang === 'ml' ? 'ml' : 'en';
+
+            const matchedVoice = voices.find(v => v.lang.toLowerCase().includes(targetLang)) ||
+                                 voices.find(v => v.lang.toLowerCase().includes('en')) ||
+                                 voices[0];
+
+            if (matchedVoice) utterance.voice = matchedVoice;
+            if (gender === 'female') {
+                utterance.pitch = 1.25;
+                utterance.rate = 0.95;
+            } else {
+                utterance.pitch = 0.85;
+                utterance.rate = 0.90;
+            }
+            utterance.volume = 1.0;
+            window.speechSynthesis.speak(utterance);
+        } catch (e) {
+            console.error('Thozhan Voice error:', e);
+        }
+    };
+
     const sendChatMessage = async() => {
         const msg = chatMessage.trim();
         if (!msg) return;
@@ -1072,32 +1101,33 @@ function TouristDashboard({ user, logout }) {
         const lowerMsg = msg.toLowerCase();
         let replyText = "";
         let detectedPlace = null;
+        const mascotPrefix = aiGender === 'female' ? '🦚 காவிரி பினிக்ஸ் (AI): ' : '🐅 வீரன் புலி (AI): ';
 
         if (lowerMsg.includes('hospital') || lowerMsg.includes('doctor') || lowerMsg.includes('medical') || lowerMsg.includes('மருத்துவமனை')) {
             detectedPlace = { name: "Munnar General Hospital", lat: 10.0890, lng: 77.0597 };
-            replyText = language === 'ta'
-                ? `🤖 தோழன் AI: உங்களுக்கு அருகில் உள்ள மருத்துவமனை: "மூணார் அரசு மருத்துவமனை" (தூரம்: 1.2 கி.மீ). அவசர உதவிக்கு 108 ஐயும் அழைக்கலாம்.`
-                : `🤖 Thozhan AI: Nearest medical facility is "Munnar General Hospital" (1.2 km away). For emergency ambulance call 108.`;
+            replyText = mascotPrefix + (language === 'ta'
+                ? `உங்களுக்கு அருகில் உள்ள மருத்துவமனை: "மூணார் அரசு மருத்துவமனை" (தூரம்: 1.2 கி.மீ). அவசர உதவிக்கு 108 ஐயும் அழைக்கலாம்.`
+                : `Nearest medical facility is "Munnar General Hospital" (1.2 km away). For emergency ambulance call 108.`);
         } else if (lowerMsg.includes('police') || lowerMsg.includes('station') || lowerMsg.includes('காவல் நிலைய') || lowerMsg.includes('போலீஸ்')) {
             detectedPlace = { name: "Munnar Police Station", lat: 10.0881, lng: 77.0601 };
-            replyText = language === 'ta'
-                ? `🤖 தோழன் AI: உங்களுக்கு அருகில் உள்ள காவல் நிலையம்: "மூணார் காவல் நிலையம்" (தூரம்: 0.9 கி.மீ). அவசர உதவிக்கு 100 ஐ அழைக்கலாம்.`
-                : `🤖 Thozhan AI: Nearest police station is "Munnar Police Station" (0.9 km away). For immediate police help call 100.`;
+            replyText = mascotPrefix + (language === 'ta'
+                ? `உங்களுக்கு அருகில் உள்ள காவல் நிலையம்: "மூணார் காவல் நிலையம்" (தூரம்: 0.9 கி.மீ). அவசர உதவிக்கு 100 ஐ அழைக்கலாம்.`
+                : `Nearest police station is "Munnar Police Station" (0.9 km away). For immediate police help call 100.`);
         } else if (lowerMsg.includes('bus') || lowerMsg.includes('stand') || lowerMsg.includes('பேருந்து நிலையம்')) {
             detectedPlace = { name: "Munnar KSRTC Bus Stand", lat: 10.0872, lng: 77.0620 };
-            replyText = language === 'ta'
-                ? `🤖 தோழன் AI: உங்களுக்கு அருகில் உள்ள பேருந்து நிலையம்: "மூணார் கே.எஸ்.ஆர்.டி.சி பேருந்து நிலையம்" (தூரம்: 1.5 கி.மீ).`
-                : `🤖 Thozhan AI: Nearest bus station is "Munnar KSRTC Bus Stand" (1.5 km away).`;
+            replyText = mascotPrefix + (language === 'ta'
+                ? `உங்களுக்கு அருகில் உள்ள பேருந்து நிலையம்: "மூணார் கே.எஸ்.ஆர்.டி.சி பேருந்து நிலையம்" (தூரம்: 1.5 கி.மீ).`
+                : `Nearest bus station is "Munnar KSRTC Bus Stand" (1.5 km away).`);
         } else if (lowerMsg.includes('waterfall') || lowerMsg.includes('iraichilpara') || lowerMsg.includes('நீர்வீழ்ச்சி')) {
             detectedPlace = { name: "Iraichilpara Waterfalls", lat: 10.0520, lng: 77.0680 };
-            replyText = language === 'ta'
-                ? `🤖 தோழன் AI: "இறைச்சில்பாறை நீர்வீழ்ச்சி" ஆபத்து அளவு: 75/100 (மிக அதிகம்). வழுக்கும் பாறைகள் உள்ளன. கவனமாகச் செல்லவும்.`
-                : `🤖 Thozhan AI: "Iraichilpara Waterfalls" Risk Score: 75/100 (VERY HIGH). Beware of slippery rocks.`;
+            replyText = mascotPrefix + (language === 'ta'
+                ? `"இறைச்சில்பாறை நீர்வீழ்ச்சி" ஆபத்து அளவு: 75/100 (மிக அதிகம்). வழுக்கும் பாறைகள் உள்ளன. கவனமாகச் செல்லவும்.`
+                : `"Iraichilpara Waterfalls" Risk Score: 75/100 (VERY HIGH). Beware of slippery rocks.`);
         } else if (lowerMsg.includes('shop') || lowerMsg.includes('hotel') || lowerMsg.includes('restaurant') || lowerMsg.includes('கடை') || lowerMsg.includes('சாப்பாடு')) {
             detectedPlace = { name: "Munnar Central Market & Hotels", lat: 10.0895, lng: 77.0610 };
-            replyText = language === 'ta'
-                ? `🤖 தோழன் AI: அருகில் உள்ள கடைகள் மற்றும் உணவகங்கள்: "மூணார் சென்ட்ரல் மார்க்கெட் பகுதி" (தூரம்: 0.8 கி.மீ).`
-                : `🤖 Thozhan AI: Nearest shops and restaurants are at "Munnar Central Market Area" (0.8 km away).`;
+            replyText = mascotPrefix + (language === 'ta'
+                ? `அருகில் உள்ள கடைகள் மற்றும் உணவகங்கள்: "மூணார் சென்ட்ரல் மார்க்கெட் பகுதி" (தூரம்: 0.8 கி.மீ).`
+                : `Nearest shops and restaurants are at "Munnar Central Market Area" (0.8 km away).`);
         } else {
             try {
                 const res = await fetch(`${BACKEND_URL}/api/ai/chat`, {
@@ -1106,19 +1136,19 @@ function TouristDashboard({ user, logout }) {
                     body: JSON.stringify({ message: msg })
                 });
                 const data = await res.json();
-                replyText = data.reply;
+                replyText = mascotPrefix + data.reply;
                 if (language !== 'en') replyText = await translateText(replyText);
             } catch (err) {
-                replyText = language === 'ta'
-                    ? `🤖 தோழன் AI: நான் உங்களுக்கு பாதுகாப்பான வழித்தடங்கள், மருத்துவமனை, காவல் நிலையம் மற்றும் ஆபத்தான பகுதிகளைக் காட்ட முடியும்.`
-                    : `🤖 Thozhan AI: I can help you locate nearby hospitals, police stations, safe zones, and danger areas.`;
+                replyText = mascotPrefix + (language === 'ta'
+                    ? `நான் உங்களுக்கு பாதுகாப்பான வழித்தடங்கள், மருத்துவமனை, காவல் நிலையம் மற்றும் ஆபத்தான பகுதிகளைக் காட்ட முடியும்.`
+                    : `I can help you locate nearby hospitals, police stations, safe zones, and danger areas.`);
             }
         }
 
         setChatReply(replyText);
         setAiSuggestedPlace(detectedPlace);
         setChatMessage('');
-        speakSpeech(replyText, language);
+        speakThozhanVoice(replyText, language, aiGender);
     };
 
     const playVoiceStatus = () => {
@@ -1779,7 +1809,7 @@ function TouristDashboard({ user, logout }) {
                             </p>
 
                             <p style={{ background: '#e8f5e9', padding: '10px', borderRadius: '8px' }}>
-                                <strong>🔊 3. AI Voice Assistant:</strong><br />
+                                <strong>🔊 3. AI Voice Assistant (ஆஃப்லைன் & ஆன்லைன்):</strong><br />
                                 தோழன் AI-யிடம் அருகில் உள்ள மருத்துவமனை, காவல் நிலையம் பற்றிக் கேட்டால், அது அனுமதி கேட்டு மேப்பில் ரோட்மேப் போடும்.
                             </p>
 
@@ -1797,6 +1827,130 @@ function TouristDashboard({ user, logout }) {
                         <button onClick={() => setShowManualModal(false)} className="action-btn" style={{ width: '100%', marginTop: '16px', padding: '12px', fontSize: '0.95rem' }}>
                             Got It! (புரிந்தது)
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Floating Siri-Style Thozhan AI Mascot Button */}
+            <div
+                onClick={() => setShowAiMascotModal(true)}
+                style={{
+                    position: 'fixed', bottom: '75px', right: '18px', zIndex: 9999,
+                    width: '62px', height: '62px', borderRadius: '50%',
+                    background: aiGender === 'female' ? 'linear-gradient(135deg, #ff0844 0%, #ffb199 100%)' : 'linear-gradient(135deg, #f12711 0%, #f5af19 100%)',
+                    boxShadow: '0 8px 25px rgba(241,39,17,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', border: '3px solid #ffffff', animation: 'pulse 2s infinite'
+                }}
+                title="Open Thozhan AI Assistant"
+            >
+                <span style={{ fontSize: '2.2rem' }}>{aiGender === 'female' ? '🦚' : '🐅'}</span>
+            </div>
+
+            {/* Thozhan Siri-Style Voice AI Assistant Modal */}
+            {showAiMascotModal && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+                    background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
+                    display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 999999, padding: '16px'
+                }} className="fade-in">
+                    <div style={{
+                        background: '#ffffff', borderRadius: '24px', padding: '24px 20px', maxWidth: '480px', width: '100%',
+                        maxHeight: '90vh', overflowY: 'auto', border: '3px solid #1e3c72', color: '#333'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #eee', paddingBottom: '12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <span style={{ fontSize: '2.4rem' }}>{aiGender === 'female' ? '🦚' : '🐅'}</span>
+                                <div>
+                                    <h3 style={{ margin: 0, color: '#1e3c72', fontSize: '1.2rem' }}>
+                                        {aiGender === 'female' ? '🦚 காவிரி பினிக்ஸ் AI' : '🐅 வீரன் புலி AI'}
+                                    </h3>
+                                    <small style={{ color: navigator.onLine ? '#2e7d32' : '#d32f2f', fontWeight: 'bold' }}>
+                                        {navigator.onLine ? '🟢 Online Cloud AI' : '📡 Offline Forest AI Active'}
+                                    </small>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowAiMascotModal(false)} className="action-btn" style={{ background: '#ff416c', padding: '6px 12px', fontSize: '0.8rem' }}>❌ Close</button>
+                        </div>
+
+                        {/* Gender / Personality Selector */}
+                        <div style={{ display: 'flex', gap: '8px', background: '#f5f7fa', padding: '6px', borderRadius: '20px', margin: '14px 0' }}>
+                            <button
+                                type="button"
+                                onClick={() => { setAiGender('male'); localStorage.setItem('thozhanGender', 'male'); }}
+                                style={{
+                                    flex: 1, padding: '8px', borderRadius: '15px', border: 'none', fontWeight: 'bold', fontSize: '0.82rem', cursor: 'pointer',
+                                    background: aiGender === 'male' ? '#1e3c72' : 'transparent', color: aiGender === 'male' ? '#ffffff' : '#555'
+                                }}
+                            >
+                                🐅 Male (வீரன் புலி)
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => { setAiGender('female'); localStorage.setItem('thozhanGender', 'female'); }}
+                                style={{
+                                    flex: 1, padding: '8px', borderRadius: '15px', border: 'none', fontWeight: 'bold', fontSize: '0.82rem', cursor: 'pointer',
+                                    background: aiGender === 'female' ? '#ff0844' : 'transparent', color: aiGender === 'female' ? '#ffffff' : '#555'
+                                }}
+                            >
+                                🦚 Female (காவிரி பினிக்ஸ்)
+                            </button>
+                        </div>
+
+                        {/* Speech Response Box */}
+                        <div style={{ background: '#f8f9fa', padding: '14px', borderRadius: '12px', minHeight: '80px', marginBottom: '14px', fontSize: '0.92rem', color: '#1e3c72', borderLeft: '4px solid #1e3c72' }}>
+                            {chatReply || (language === 'ta' ? 'வணக்கம்! நான் உங்க தோழன் AI. மருத்துவமனை, காவல் நிலையம், பேருந்து நிலையம், உணவகம் அல்லது ஆபத்தான பகுதிகளைப் பற்றிக் கேளுங்கள்.' : 'Hello! I am your Thozhan AI Assistant. Ask me about nearby hospitals, police stations, bus stands, or danger spots.')}
+                        </div>
+
+                        {/* Interactive Location Permission Prompt */}
+                        {aiSuggestedPlace && (
+                            <div style={{ margin: '10px 0 14px 0', background: '#e3f2fd', padding: '12px', borderRadius: '10px', borderLeft: '4px solid #1e3c72' }}>
+                                <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', fontWeight: 'bold', color: '#1e3c72' }}>
+                                    🧭 Thozhan Prompt: Shall I plot the roadmap to "{aiSuggestedPlace.name}" on your Google Satellite Map?
+                                </p>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            handleStartNavigation({
+                                                name: aiSuggestedPlace.name,
+                                                center: { lat: aiSuggestedPlace.lat, lng: aiSuggestedPlace.lng },
+                                                coordinates: [[aiSuggestedPlace.lat, aiSuggestedPlace.lng]]
+                                            });
+                                            setAiSuggestedPlace(null);
+                                            setShowAiMascotModal(false);
+                                        }}
+                                        className="action-btn"
+                                        style={{ background: '#25D366', padding: '8px 14px', fontSize: '0.85rem', fontWeight: 'bold' }}
+                                    >
+                                        ✅ Yes, Plot Roadmap
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setAiSuggestedPlace(null)}
+                                        className="action-btn"
+                                        style={{ background: '#ff416c', padding: '8px 14px', fontSize: '0.85rem' }}
+                                    >
+                                        ❌ Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Chat Input Bar */}
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <input
+                                className="modern-input"
+                                style={{ margin: 0 }}
+                                type="text"
+                                value={chatMessage}
+                                onChange={(e) => setChatMessage(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === 'Enter') sendChatMessage(); }}
+                                placeholder="Ask Thozhan AI (e.g. Nearest hospital)..."
+                            />
+                            <button onClick={sendChatMessage} className="action-btn" style={{ background: '#1e3c72', whiteSpace: 'nowrap' }}>
+                                🎙️ Speak / Ask
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
