@@ -142,22 +142,25 @@ const globalStyles = `
     width: 100%;
   }
 
-  /* Animated Glassmorphism Bottom Navigation Bar */
+  /* Animated Floating Dock Glassmorphism Bottom Navigation Bar */
   .bottom-nav-bar {
     position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100vw;
-    background: rgba(30, 60, 114, 0.94);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90vw;
+    max-width: 440px;
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     display: flex;
     justify-content: space-around;
     align-items: center;
-    padding: 8px 12px;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.25);
+    padding: 6px 12px;
+    border-radius: 35px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
     z-index: 99999;
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.2);
   }
 
   .bottom-nav-item {
@@ -168,19 +171,19 @@ const globalStyles = `
     background: transparent;
     border: none;
     color: rgba(255, 255, 255, 0.65);
-    font-size: 0.75rem;
-    font-weight: bold;
+    font-size: 0.72rem;
+    font-weight: 600;
     padding: 6px 18px;
-    border-radius: 20px;
+    border-radius: 25px;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
 
   .bottom-nav-item.active {
     color: #ffffff;
-    background: rgba(255, 255, 255, 0.22);
-    transform: translateY(-3px) scale(1.05);
-    box-shadow: 0 4px 15px rgba(0, 195, 255, 0.3);
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
   }
 
   .bottom-nav-item-icon {
@@ -193,6 +196,29 @@ const globalStyles = `
     transform: scale(1.15);
   }
 
+  /* Sleek Floating Siri-Style AI Mascot Badge */
+  .ai-mascot-floating {
+    position: fixed;
+    bottom: 85px;
+    right: 20px;
+    z-index: 9999;
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(12px);
+    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    padding: 8px 14px;
+    border-radius: 30px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  .ai-mascot-floating:hover {
+    transform: scale(1.06);
+    box-shadow: 0 12px 30px rgba(37, 99, 235, 0.4);
+  }
+
   .navbar-brand { font-size: 1.2rem; font-weight: bold; margin: 0; letter-spacing: 1px; }
   .navbar-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
@@ -203,13 +229,14 @@ const globalStyles = `
 
   .hover-card { 
     background: white; 
-    border-radius: 12px; 
-    padding: 16px; 
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
-    margin-bottom: 15px; 
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+    margin-bottom: 18px;
     border-top: 4px solid #1e3c72;
     width: 100%;
     word-break: break-word;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
 
   .pulse-btn { 
