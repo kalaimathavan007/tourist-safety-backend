@@ -30,10 +30,41 @@ const globalStyles = `
     transition: background 0.8s ease-in-out;
   }
 
-  /* Nature, Forest & Wildlife Location Animations */
-  .nature-bg {
-    background: linear-gradient(135deg, #0b231a 0%, #11432e 50%, #1e3c72 100%) !important;
-    animation: natureBreeze 8s ease-in-out infinite alternate;
+  /* Anime-Level Mascot Hunt & Phoenix Entry Keyframes */
+  @keyframes tigerHuntEntrance {
+    0% { transform: scale(0.2) rotate(-30deg) translateY(100px); opacity: 0; filter: drop-shadow(0 0 0 gold); }
+    50% { transform: scale(1.3) rotate(10deg) translateY(-20px); opacity: 1; filter: drop-shadow(0 0 35px #ffb300); }
+    75% { transform: scale(0.95) rotate(-5deg); }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; filter: drop-shadow(0 0 20px #ff8f00); }
+  }
+
+  @keyframes phoenixRiseEntrance {
+    0% { transform: scale(0.2) translateY(120px) rotate(45deg); opacity: 0; filter: drop-shadow(0 0 0 red); }
+    60% { transform: scale(1.35) translateY(-25px) rotate(-10deg); opacity: 1; filter: drop-shadow(0 0 40px #ff1744); }
+    100% { transform: scale(1) translateY(0) rotate(0deg); opacity: 1; filter: drop-shadow(0 0 22px #ff4081); }
+  }
+
+  .tiger-hunt-anim {
+    animation: tigerHuntEntrance 0.85s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  }
+  .phoenix-rise-anim {
+    animation: phoenixRiseEntrance 0.85s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  }
+
+  /* Nature Leaf Particle Overlay */
+  .leaf-particle {
+    position: fixed;
+    top: -10%;
+    pointer-events: none;
+    z-index: 1;
+    font-size: 1.2rem;
+    animation: leafFall 10s linear infinite;
+    opacity: 0.7;
+  }
+  @keyframes leafFall {
+    0% { transform: translateY(0) rotate(0deg) translateX(0); opacity: 0.8; }
+    50% { transform: translateY(50vh) rotate(180deg) translateX(50px); opacity: 0.9; }
+    100% { transform: translateY(105vh) rotate(360deg) translateX(-30px); opacity: 0; }
   }
   .nature-water-bg {
     background: linear-gradient(135deg, #00223e 0%, #1d976c 100%) !important;
@@ -1275,31 +1306,35 @@ function TouristDashboard({ user, logout }) {
         await executeActualSOS();
     };
 
-    const bgClass = weatherData && weatherData.isRain
-        ? 'gradient-bg weather-bg-rain'
-        : (weatherData && weatherData.condition && weatherData.condition.includes('Clear') ? 'gradient-bg weather-bg-clear' : 'gradient-bg weather-bg-cloudy');
+    const bgClass = isDarkMode
+        ? 'gradient-bg dark-theme'
+        : (selectedDestination && (selectedDestination.name.includes('Waterfall') || selectedDestination.name.includes('Lake') || selectedDestination.name.includes('Backwaters'))
+            ? 'gradient-bg nature-water-bg'
+            : (selectedDestination && (selectedDestination.name.includes('Sanctuary') || selectedDestination.name.includes('Forest') || selectedDestination.name.includes('Valley'))
+                ? 'gradient-bg nature-forest-bg'
+                : (weatherData && weatherData.isRain ? 'gradient-bg weather-bg-rain' : 'gradient-bg nature-bg')));
 
     return (
-        <div className={bgClass}>
+        <div className={bgClass} style={{ paddingBottom: '85px', minHeight: '100vh', position: 'relative' }}>
+            {/* Animated Floating Nature Leaf Particles Overlay */}
+            <div className="leaf-particle" style={{ left: '8%', animationDelay: '0s' }}>🍃</div>
+            <div className="leaf-particle" style={{ left: '32%', animationDelay: '2.2s' }}>🌿</div>
+            <div className="leaf-particle" style={{ left: '62%', animationDelay: '4.8s' }}>🍃</div>
+            <div className="leaf-particle" style={{ left: '86%', animationDelay: '7.1s' }}>🌿</div>
+
             <nav className="glass-navbar fade-in">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <img src="/logo.png" alt="Logo" style={{ width: '34px', height: '34px', borderRadius: '6px' }} />
                     <h1 className="navbar-brand">JOURNEY GUARD</h1>
                 </div>
                 <div className="navbar-controls">
-                    <select className="modern-input" value={language} onChange={(e) => setLanguage(e.target.value)} style={{ width: 'auto', margin: 0, padding: '6px 10px', fontSize: '0.85rem' }}>
-                        <option value="en">🇬🇧 English</option>
-                        <option value="ta">🇮🇳 தமிழ்</option>
-                        <option value="ml">🌴 മലയാളം</option>
-                        <option value="hi">🇮🇳 हिन्दी</option>
-                    </select>
                     <span className="role-badge">Tourist: {user ? user.name : ''}</span>
                     <button onClick={logout} className="action-btn" style={{ background: '#ff416c', padding: '6px 12px' }}>Logout</button>
                 </div>
             </nav>
 
-            {/* Tourist Tab Navigation Switcher */}
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '15px', padding: '0 12px' }}>
+            {/* Tourist Tab Navigation Switcher (Top Pills) */}
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '15px', padding: '0 12px', flexWrap: 'wrap' }}>
                 <button
                     type="button"
                     onClick={() => setTouristTab('map')}
@@ -1307,15 +1342,15 @@ function TouristDashboard({ user, logout }) {
                     style={{
                         background: touristTab === 'map' ? '#1e3c72' : '#ffffff',
                         color: touristTab === 'map' ? '#ffffff' : '#1e3c72',
-                        padding: '10px 22px',
+                        padding: '8px 18px',
                         borderRadius: '25px',
-                        fontSize: '0.9rem',
+                        fontSize: '0.85rem',
                         fontWeight: 'bold',
                         boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                         border: '1.5px solid #1e3c72'
                     }}
                 >
-                    🗺️ Safety Map & Nav
+                    🗺️ Safety Map
                 </button>
                 <button
                     type="button"
@@ -1324,19 +1359,36 @@ function TouristDashboard({ user, logout }) {
                     style={{
                         background: touristTab === 'account' ? '#1e3c72' : '#ffffff',
                         color: touristTab === 'account' ? '#ffffff' : '#1e3c72',
-                        padding: '10px 22px',
+                        padding: '8px 18px',
                         borderRadius: '25px',
-                        fontSize: '0.9rem',
+                        fontSize: '0.85rem',
                         fontWeight: 'bold',
                         boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                         border: '1.5px solid #1e3c72'
                     }}
                 >
-                    👤 My Account & Pass
+                    👤 Profile & ID
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setTouristTab('settings')}
+                    className="action-btn"
+                    style={{
+                        background: touristTab === 'settings' ? '#1e3c72' : '#ffffff',
+                        color: touristTab === 'settings' ? '#ffffff' : '#1e3c72',
+                        padding: '8px 18px',
+                        borderRadius: '25px',
+                        fontSize: '0.85rem',
+                        fontWeight: 'bold',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                        border: '1.5px solid #1e3c72'
+                    }}
+                >
+                    ⚙️ Settings & Manual
                 </button>
             </div>
 
-            {/* Tab 1: Instagram-Style My Account & Settings Page */}
+            {/* TAB 1: Profile & ID Page */}
             {touristTab === 'account' ? (
                 <div style={{ maxWidth: '600px', margin: '0 auto', width: '100%', padding: '0 12px' }} className="fade-in">
 
@@ -1858,35 +1910,37 @@ function TouristDashboard({ user, logout }) {
                 </div>
             )}
 
-            {/* Floating Siri-Style Thozhan AI Mascot Button */}
+            {/* Always-Visible Siri Floating Thozhan AI Mascot Badge */}
             <div
+                className="ai-mascot-floating"
                 onClick={() => setShowAiMascotModal(true)}
-                style={{
-                    position: 'fixed', bottom: '75px', right: '18px', zIndex: 9999,
-                    width: '62px', height: '62px', borderRadius: '50%',
-                    background: aiGender === 'female' ? 'linear-gradient(135deg, #ff0844 0%, #ffb199 100%)' : 'linear-gradient(135deg, #f12711 0%, #f5af19 100%)',
-                    boxShadow: '0 8px 25px rgba(241,39,17,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer', border: '3px solid #ffffff', animation: 'pulse 2s infinite'
-                }}
                 title="Open Thozhan AI Assistant"
             >
-                <span style={{ fontSize: '2.2rem' }}>{aiGender === 'female' ? '🦚' : '🐅'}</span>
+                <span style={{ fontSize: '1.6rem' }}>{aiGender === 'female' ? '🦚' : '🐅'}</span>
+                <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#ffffff' }}>Thozhan AI</span>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: navigator.onLine ? '#38ef7d' : '#ff416c' }}></span>
             </div>
 
-            {/* Thozhan Siri-Style Voice AI Assistant Modal */}
+            {/* Thozhan Siri-Style Voice AI Assistant Side Drawer / Sheet */}
             {showAiMascotModal && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-                    background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
+                    background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(8px)',
                     display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 999999, padding: '16px'
                 }} className="fade-in">
-                    <div style={{
-                        background: '#ffffff', borderRadius: '24px', padding: '24px 20px', maxWidth: '480px', width: '100%',
-                        maxHeight: '90vh', overflowY: 'auto', border: '3px solid #1e3c72', color: '#333'
-                    }}>
+                    <div
+                        className={aiGender === 'female' ? 'phoenix-rise-anim' : 'tiger-hunt-anim'}
+                        style={{
+                            background: '#ffffff', borderRadius: '28px', padding: '24px 20px', maxWidth: '480px', width: '100%',
+                            maxHeight: '90vh', overflowY: 'auto', border: aiGender === 'female' ? '3px solid #ff0844' : '3px solid #f12711',
+                            color: '#333', boxShadow: '0 20px 60px rgba(0,0,0,0.5)'
+                        }}
+                    >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #eee', paddingBottom: '12px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <span style={{ fontSize: '2.4rem' }}>{aiGender === 'female' ? '🦚' : '🐅'}</span>
+                                <span style={{ fontSize: '3rem', filter: aiGender === 'female' ? 'drop-shadow(0 0 15px #ff0844)' : 'drop-shadow(0 0 15px #f12711)' }}>
+                                    {aiGender === 'female' ? '🦚' : '🐅'}
+                                </span>
                                 <div>
                                     <h3 style={{ margin: 0, color: '#1e3c72', fontSize: '1.2rem' }}>
                                         {aiGender === 'female' ? '🦚 காவிரி பினிக்ஸ் AI' : '🐅 வீரன் புலி AI'}
@@ -1899,14 +1953,15 @@ function TouristDashboard({ user, logout }) {
                             <button onClick={() => setShowAiMascotModal(false)} className="action-btn" style={{ background: '#ff416c', padding: '6px 12px', fontSize: '0.8rem' }}>❌ Close</button>
                         </div>
 
-                        {/* Gender / Personality Selector */}
+                        {/* Gender / Mascot Personality Selector */}
                         <div style={{ display: 'flex', gap: '8px', background: '#f5f7fa', padding: '6px', borderRadius: '20px', margin: '14px 0' }}>
                             <button
                                 type="button"
                                 onClick={() => { setAiGender('male'); localStorage.setItem('thozhanGender', 'male'); }}
                                 style={{
                                     flex: 1, padding: '8px', borderRadius: '15px', border: 'none', fontWeight: 'bold', fontSize: '0.82rem', cursor: 'pointer',
-                                    background: aiGender === 'male' ? '#1e3c72' : 'transparent', color: aiGender === 'male' ? '#ffffff' : '#555'
+                                    background: aiGender === 'male' ? 'linear-gradient(135deg, #f12711 0%, #f5af19 100%)' : 'transparent',
+                                    color: aiGender === 'male' ? '#ffffff' : '#555', boxShadow: aiGender === 'male' ? '0 4px 12px rgba(241,39,17,0.4)' : 'none'
                                 }}
                             >
                                 🐅 Male (வீரன் புலி)
@@ -1916,21 +1971,38 @@ function TouristDashboard({ user, logout }) {
                                 onClick={() => { setAiGender('female'); localStorage.setItem('thozhanGender', 'female'); }}
                                 style={{
                                     flex: 1, padding: '8px', borderRadius: '15px', border: 'none', fontWeight: 'bold', fontSize: '0.82rem', cursor: 'pointer',
-                                    background: aiGender === 'female' ? '#ff0844' : 'transparent', color: aiGender === 'female' ? '#ffffff' : '#555'
+                                    background: aiGender === 'female' ? 'linear-gradient(135deg, #ff0844 0%, #ffb199 100%)' : 'transparent',
+                                    color: aiGender === 'female' ? '#ffffff' : '#555', boxShadow: aiGender === 'female' ? '0 4px 12px rgba(255,8,68,0.4)' : 'none'
                                 }}
                             >
                                 🦚 Female (காவிரி பினிக்ஸ்)
                             </button>
                         </div>
 
+                        {/* Quick Question Assistant Chips */}
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                            <button onClick={() => { setChatMessage('Nearest hospital'); sendChatMessage(); }} className="action-btn" style={{ background: '#e3f2fd', color: '#1565c0', padding: '4px 10px', fontSize: '0.75rem', border: '1px solid #90caf9' }}>
+                                🏥 Nearest Hospital
+                            </button>
+                            <button onClick={() => { setChatMessage('Nearest police station'); sendChatMessage(); }} className="action-btn" style={{ background: '#e8eaf6', color: '#283593', padding: '4px 10px', fontSize: '0.75rem', border: '1px solid #c5cae9' }}>
+                                👮 Police Station
+                            </button>
+                            <button onClick={() => { setChatMessage('Bus Stand'); sendChatMessage(); }} className="action-btn" style={{ background: '#e8f5e9', color: '#2e7d32', padding: '4px 10px', fontSize: '0.75rem', border: '1px solid #a5d6a7' }}>
+                                🚌 Bus Stand
+                            </button>
+                            <button onClick={() => { setChatMessage('Waterfalls safety'); sendChatMessage(); }} className="action-btn" style={{ background: '#fff3e0', color: '#e65100', padding: '4px 10px', fontSize: '0.75rem', border: '1px solid #ffe0b2' }}>
+                                🌊 Waterfalls
+                            </button>
+                        </div>
+
                         {/* Speech Response Box */}
-                        <div style={{ background: '#f8f9fa', padding: '14px', borderRadius: '12px', minHeight: '80px', marginBottom: '14px', fontSize: '0.92rem', color: '#1e3c72', borderLeft: '4px solid #1e3c72' }}>
-                            {chatReply || (language === 'ta' ? 'வணக்கம்! நான் உங்க தோழன் AI. மருத்துவமனை, காவல் நிலையம், பேருந்து நிலையம், உணவகம் அல்லது ஆபத்தான பகுதிகளைப் பற்றிக் கேளுங்கள்.' : 'Hello! I am your Thozhan AI Assistant. Ask me about nearby hospitals, police stations, bus stands, or danger spots.')}
+                        <div style={{ background: '#f8f9fa', padding: '14px', borderRadius: '14px', minHeight: '80px', marginBottom: '14px', fontSize: '0.92rem', color: '#1e3c72', borderLeft: '4px solid #1e3c72' }}>
+                            {chatReply || (language === 'ta' ? 'வணக்கம்! நான் உங்க தோழன் AI. மருத்துவமனை, காவல் நிலையம், பேருந்து நிலையம் அல்லது ஆபத்தான பகுதிகளைப் பற்றிக் கேளுங்கள்.' : 'Hello! I am your Thozhan AI Assistant. Ask me about nearby hospitals, police stations, bus stands, or danger spots.')}
                         </div>
 
                         {/* Interactive Location Permission Prompt */}
                         {aiSuggestedPlace && (
-                            <div style={{ margin: '10px 0 14px 0', background: '#e3f2fd', padding: '12px', borderRadius: '10px', borderLeft: '4px solid #1e3c72' }}>
+                            <div style={{ margin: '10px 0 14px 0', background: '#e3f2fd', padding: '12px', borderRadius: '12px', borderLeft: '4px solid #1e3c72' }}>
                                 <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', fontWeight: 'bold', color: '#1e3c72' }}>
                                     🧭 Thozhan Prompt: Shall I plot the roadmap to "{aiSuggestedPlace.name}" on your Google Satellite Map?
                                 </p>
@@ -1945,6 +2017,7 @@ function TouristDashboard({ user, logout }) {
                                             });
                                             setAiSuggestedPlace(null);
                                             setShowAiMascotModal(false);
+                                            setTouristTab('map');
                                         }}
                                         className="action-btn"
                                         style={{ background: '#25D366', padding: '8px 14px', fontSize: '0.85rem', fontWeight: 'bold' }}
