@@ -76,13 +76,66 @@ const globalStyles = `
     50% { transform: translateY(50vh) rotate(180deg) translateX(50px); opacity: 0.9; }
     100% { transform: translateY(105vh) rotate(360deg) translateX(-30px); opacity: 0; }
   }
-  .nature-water-bg {
-    background: linear-gradient(135deg, #00223e 0%, #1d976c 100%) !important;
+  /* Climate & Location-Based Background Themes */
+  .nature-mountain-bg {
+    background: linear-gradient(135deg, #0b231a 0%, #134e5e 50%, #71b280 100%) !important;
+    animation: natureBreeze 8s ease-in-out infinite alternate;
+  }
+  .nature-waterfall-bg {
+    background: linear-gradient(135deg, #00223e 0%, #1d976c 50%, #1e3c72 100%) !important;
     animation: waterWave 6s ease-in-out infinite alternate;
   }
-  .nature-forest-bg {
-    background: linear-gradient(135deg, #134e5e 0%, #71b280 100%) !important;
+  .nature-backwater-bg {
+    background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%) !important;
     animation: forestPulse 7s ease-in-out infinite alternate;
+  }
+  .weather-bg-rain {
+    background: linear-gradient(135deg, #1c2541 0%, #0b132b 50%, #3a506b 100%) !important;
+    animation: rainPulse 4s ease-in-out infinite alternate;
+  }
+  .weather-bg-storm {
+    background: linear-gradient(135deg, #11001c 0%, #220038 50%, #3a005c 100%) !important;
+    animation: stormPulse 2s ease-in-out infinite alternate;
+  }
+  @keyframes stormPulse {
+    0% { filter: brightness(0.9) contrast(1.1); }
+    50% { filter: brightness(1.2) contrast(1.3); }
+    100% { filter: brightness(0.9) contrast(1.1); }
+  }
+
+  /* Google Settings Style CSS */
+  .settings-section-title {
+    color: #1e3c72;
+    font-size: 0.85rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin: 18px 0 8px 4px;
+  }
+
+  .google-settings-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 6px 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+    border: 1px solid #e2e8f0;
+    margin-bottom: 14px;
+  }
+
+  .google-settings-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 8px;
+    border-bottom: 1px solid #f1f5f9;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  .google-settings-row:last-child {
+    border-bottom: none;
+  }
+  .google-settings-row:hover {
+    background: #f8fafc;
   }
 
   @keyframes natureBreeze {
@@ -841,6 +894,10 @@ function TouristDashboard({ user, logout }) {
     const [profilePhoto, setProfilePhoto] = useState(localStorage.getItem('userAvatar') || '');
     const [userHometown, setUserHometown] = useState(localStorage.getItem('userHometown') || 'Kovilpatti, Tamil Nadu');
     const [showManualModal, setShowManualModal] = useState(false);
+    const [showLeafAnimation, setShowLeafAnimation] = useState(true);
+    const [geofenceEnabled, setGeofenceEnabled] = useState(true);
+    const [showPolicyModal, setShowPolicyModal] = useState(false);
+    const [showAboutModal, setShowAboutModal] = useState(false);
 
     const handleImageUpload = (e) => {
         const file = e.target.files[0];
@@ -1316,21 +1373,38 @@ function TouristDashboard({ user, logout }) {
         await executeActualSOS();
     };
 
-    const bgClass = isDarkMode
-        ? 'gradient-bg dark-theme'
-        : (selectedDestination && (selectedDestination.name.includes('Waterfall') || selectedDestination.name.includes('Lake') || selectedDestination.name.includes('Backwaters'))
-            ? 'gradient-bg nature-water-bg'
-            : (selectedDestination && (selectedDestination.name.includes('Sanctuary') || selectedDestination.name.includes('Forest') || selectedDestination.name.includes('Valley'))
-                ? 'gradient-bg nature-forest-bg'
-                : (weatherData && weatherData.isRain ? 'gradient-bg weather-bg-rain' : 'gradient-bg nature-bg')));
+    const getDynamicNatureBgClass = () => {
+        if (isDarkMode) return 'gradient-bg dark-theme';
+
+        if (weatherData) {
+            if (weatherData.condition && weatherData.condition.toLowerCase().includes('thunder')) return 'gradient-bg weather-bg-storm';
+            if (weatherData.isRain || (weatherData.condition && weatherData.condition.toLowerCase().includes('rain'))) return 'gradient-bg weather-bg-rain';
+            if (weatherData.condition && weatherData.condition.toLowerCase().includes('clear')) return 'gradient-bg weather-bg-clear';
+        }
+
+        if (selectedDestination) {
+            const destName = selectedDestination.name.toLowerCase();
+            if (destName.includes('waterfall') || destName.includes('lake') || destName.includes('falls') || destName.includes('river')) return 'gradient-bg nature-waterfall-bg';
+            if (destName.includes('backwater') || destName.includes('beach') || destName.includes('sea') || destName.includes('lagoon')) return 'gradient-bg nature-backwater-bg';
+            if (destName.includes('munnar') || destName.includes('sanctuary') || destName.includes('forest') || destName.includes('hill') || destName.includes('mountain')) return 'gradient-bg nature-mountain-bg';
+        }
+
+        return 'gradient-bg nature-mountain-bg';
+    };
+
+    const bgClass = getDynamicNatureBgClass();
 
     return (
         <div className={bgClass} style={{ paddingBottom: '85px', minHeight: '100vh', position: 'relative' }}>
             {/* Animated Floating Nature Leaf Particles Overlay */}
-            <div className="leaf-particle" style={{ left: '8%', animationDelay: '0s' }}>🍃</div>
-            <div className="leaf-particle" style={{ left: '32%', animationDelay: '2.2s' }}>🌿</div>
-            <div className="leaf-particle" style={{ left: '62%', animationDelay: '4.8s' }}>🍃</div>
-            <div className="leaf-particle" style={{ left: '86%', animationDelay: '7.1s' }}>🌿</div>
+            {showLeafAnimation && (
+                <>
+                    <div className="leaf-particle" style={{ left: '8%', animationDelay: '0s' }}>🍃</div>
+                    <div className="leaf-particle" style={{ left: '32%', animationDelay: '2.2s' }}>🌿</div>
+                    <div className="leaf-particle" style={{ left: '62%', animationDelay: '4.8s' }}>🍃</div>
+                    <div className="leaf-particle" style={{ left: '86%', animationDelay: '7.1s' }}>🌿</div>
+                </>
+            )}
 
             <nav className="glass-navbar fade-in">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1472,63 +1546,141 @@ function TouristDashboard({ user, logout }) {
                         </div>
                     </div>
 
-                    {/* Settings & App User Manual Card */}
-                    <div className="hover-card delay-2" style={{ background: '#ffffff', borderRadius: '16px', padding: '18px' }}>
-                        <h3 style={{ margin: '0 0 14px 0', fontSize: '1.05rem', color: '#1e3c72' }}>⚙️ Settings & Preferences</h3>
+                </div>
+            ) : touristTab === 'settings' ? (
+                /* TAB 2: Google Settings Style App Settings Panel */
+                <div style={{ maxWidth: '600px', margin: '0 auto', width: '100%', padding: '0 12px' }} className="fade-in">
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            {/* Day / Night Theme Switcher */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f8f9fa', borderRadius: '10px' }}>
-                                <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>🌓 App Day / Night Theme</span>
-                                <button
-                                    type="button"
-                                    onClick={() => setIsDarkMode(!isDarkMode)}
-                                    className="action-btn"
-                                    style={{ background: isDarkMode ? '#ffd54f' : '#1e3c72', color: isDarkMode ? '#121212' : '#ffffff', padding: '6px 14px', fontSize: '0.82rem' }}
-                                >
-                                    {isDarkMode ? '☀️ Day Mode' : '🌙 Dark Night Mode'}
-                                </button>
-                            </div>
+                    {/* Header */}
+                    <div style={{ background: '#ffffff', borderRadius: '20px', padding: '18px', marginBottom: '14px', borderLeft: '5px solid #1e3c72', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+                        <h2 style={{ margin: 0, color: '#1e3c72', fontSize: '1.3rem' }}>⚙️ App Settings & System Controls</h2>
+                        <p style={{ margin: '4px 0 0 0', color: '#666', fontSize: '0.85rem' }}>Manage theme, notifications, language & privacy</p>
+                    </div>
 
-                            {/* App User Manual Button */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f8f9fa', borderRadius: '10px' }}>
-                                <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>📖 App User Manual (வழிகாட்டி)</span>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowManualModal(true)}
-                                    className="action-btn"
-                                    style={{ background: '#38ef7d', color: '#0f2027', padding: '6px 14px', fontSize: '0.82rem', fontWeight: 'bold' }}
-                                >
-                                    📖 Open Manual
-                                </button>
+                    {/* Section 1: Account & Verification */}
+                    <div className="settings-section-title">👤 Account & Verification</div>
+                    <div className="google-settings-card">
+                        <div className="google-settings-row">
+                            <div>
+                                <strong style={{ fontSize: '0.9rem', color: '#1e3c72', display: 'block' }}>{user ? user.name : 'Tourist'}</strong>
+                                <small style={{ color: '#666', fontSize: '0.78rem' }}>{user ? user.email : ''} | Hometown: {userHometown}</small>
                             </div>
-
-                            {/* Preferred Language */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f8f9fa', borderRadius: '10px' }}>
-                                <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>🌐 Preferred Language</span>
-                                <select className="modern-input" value={language} onChange={(e) => setLanguage(e.target.value)} style={{ width: 'auto', margin: 0, padding: '6px 10px', fontSize: '0.85rem' }}>
-                                    <option value="en">🇬🇧 English</option>
-                                    <option value="ta">🇮🇳 தமிழ்</option>
-                                    <option value="ml">🌴 മലയാളം</option>
-                                    <option value="hi">🇮🇳 हिन्दी</option>
-                                </select>
-                            </div>
-
-                            {/* AI Voice Safety Test */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f8f9fa', borderRadius: '10px' }}>
-                                <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>🔊 AI Voice Safety Assistant</span>
-                                <button onClick={playVoiceStatus} className="action-btn" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
-                                    Test Voice 🔊
-                                </button>
-                            </div>
-
-                            {/* Geofence Safety Alerts */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f8f9fa', borderRadius: '10px' }}>
-                                <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>🔔 Geofence Safety Alerts</span>
-                                <span style={{ color: '#2e7d32', fontWeight: 'bold', fontSize: '0.85rem' }}>🟢 Enabled (1-Time Alert)</span>
-                            </div>
+                            <span style={{ background: '#e8f5e9', color: '#2e7d32', padding: '3px 8px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                                #TG-{(user ? (user.id || user._id || '8839') : '8839').toString().slice(-6)}
+                            </span>
                         </div>
                     </div>
+
+                    {/* Section 2: Theme & Visual FX Controls */}
+                    <div className="settings-section-title">🎨 Theme & Visual FX</div>
+                    <div className="google-settings-card">
+                        <div className="google-settings-row" onClick={() => setIsDarkMode(!isDarkMode)}>
+                            <div>
+                                <strong style={{ fontSize: '0.9rem', display: 'block' }}>🌓 Day / Dark Night Theme</strong>
+                                <small style={{ color: '#666', fontSize: '0.78rem' }}>{isDarkMode ? 'Dark Night Mode Active' : 'Light Day Mode Active'}</small>
+                            </div>
+                            <button
+                                type="button"
+                                className="action-btn"
+                                style={{ background: isDarkMode ? '#ffd54f' : '#1e3c72', color: isDarkMode ? '#121212' : '#ffffff', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 'bold' }}
+                            >
+                                {isDarkMode ? '☀️ Day Mode' : '🌙 Dark Mode'}
+                            </button>
+                        </div>
+
+                        <div className="google-settings-row" onClick={() => setShowLeafAnimation(!showLeafAnimation)}>
+                            <div>
+                                <strong style={{ fontSize: '0.9rem', display: 'block' }}>🍃 Nature Falling Leaves Animation</strong>
+                                <small style={{ color: '#666', fontSize: '0.78rem' }}>{showLeafAnimation ? 'Falling leaves animation ON' : 'Falling leaves animation OFF'}</small>
+                            </div>
+                            <button
+                                type="button"
+                                className="action-btn"
+                                style={{ background: showLeafAnimation ? '#25D366' : '#78909c', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 'bold' }}
+                            >
+                                {showLeafAnimation ? '🟢 ON' : '🔴 OFF'}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Section 3: Safety & Geofence Protection */}
+                    <div className="settings-section-title">🔔 Safety & Geofence Alerts</div>
+                    <div className="google-settings-card">
+                        <div className="google-settings-row" onClick={() => setGeofenceEnabled(!geofenceEnabled)}>
+                            <div>
+                                <strong style={{ fontSize: '0.9rem', display: 'block' }}>🔔 Geofence Danger Zone Warnings</strong>
+                                <small style={{ color: '#666', fontSize: '0.78rem' }}>Automatic 1-time alert when entering high-risk areas</small>
+                            </div>
+                            <span style={{ color: geofenceEnabled ? '#2e7d32' : '#c62828', fontWeight: 'bold', fontSize: '0.82rem' }}>
+                                {geofenceEnabled ? '🟢 Enabled' : '🔴 Disabled'}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Section 4: Language & Voice Speech */}
+                    <div className="settings-section-title">🌐 Language & Voice Controls</div>
+                    <div className="google-settings-card">
+                        <div className="google-settings-row">
+                            <div>
+                                <strong style={{ fontSize: '0.9rem', display: 'block' }}>🌐 App Preferred Language</strong>
+                                <small style={{ color: '#666', fontSize: '0.78rem' }}>Select your primary language</small>
+                            </div>
+                            <select className="modern-input" value={language} onChange={(e) => setLanguage(e.target.value)} style={{ width: 'auto', margin: 0, padding: '4px 8px', fontSize: '0.82rem' }}>
+                                <option value="en">🇬🇧 English</option>
+                                <option value="ta">🇮🇳 தமிழ்</option>
+                                <option value="ml">🌴 മലയാളം</option>
+                                <option value="hi">🇮🇳 हिन्दी</option>
+                            </select>
+                        </div>
+
+                        <div className="google-settings-row" onClick={playVoiceStatus}>
+                            <div>
+                                <strong style={{ fontSize: '0.9rem', display: 'block' }}>🔊 AI Voice Assistant Speech Test</strong>
+                                <small style={{ color: '#666', fontSize: '0.78rem' }}>Test spoken voice safety warnings</small>
+                            </div>
+                            <button className="action-btn" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
+                                Test Voice 🔊
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Section 5: Help, Manual & Legal */}
+                    <div className="settings-section-title">📖 Help, Manual & Legal</div>
+                    <div className="google-settings-card">
+                        <div className="google-settings-row" onClick={() => setShowManualModal(true)}>
+                            <div>
+                                <strong style={{ fontSize: '0.9rem', display: 'block' }}>📖 App User Manual (வழிகாட்டி)</strong>
+                                <small style={{ color: '#666', fontSize: '0.78rem' }}>Step-by-step usage guide</small>
+                            </div>
+                            <button className="action-btn" style={{ background: '#38ef7d', color: '#0f2027', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                                Open ➔
+                            </button>
+                        </div>
+
+                        <div className="google-settings-row" onClick={() => setShowPolicyModal(true)}>
+                            <div>
+                                <strong style={{ fontSize: '0.9rem', display: 'block' }}>🛡️ Privacy Policy & Govt Compliance</strong>
+                                <small style={{ color: '#666', fontSize: '0.78rem' }}>Data privacy, GPS encryption & blockchain protection</small>
+                            </div>
+                            <button className="action-btn" style={{ background: '#1e3c72', padding: '6px 12px', fontSize: '0.8rem' }}>
+                                View ➔
+                            </button>
+                        </div>
+
+                        <div className="google-settings-row" onClick={() => setShowAboutModal(true)}>
+                            <div>
+                                <strong style={{ fontSize: '0.9rem', display: 'block' }}>ℹ️ About Journey Guard App v2.4</strong>
+                                <small style={{ color: '#666', fontSize: '0.78rem' }}>System credits & version details</small>
+                            </div>
+                            <button className="action-btn" style={{ background: '#78909c', padding: '6px 12px', fontSize: '0.8rem' }}>
+                                Info ➔
+                            </button>
+                        </div>
+                    </div>
+
+                    <button onClick={logout} className="action-btn" style={{ width: '100%', background: '#ff416c', padding: '12px', fontSize: '0.95rem', marginTop: '10px' }}>
+                        🚪 Sign Out Account
+                    </button>
                 </div>
             ) : (
                 /* Tab 2: Map & Safety Navigation Dashboard */
@@ -1915,6 +2067,66 @@ function TouristDashboard({ user, logout }) {
 
                         <button onClick={() => setShowManualModal(false)} className="action-btn" style={{ width: '100%', marginTop: '16px', padding: '12px', fontSize: '0.95rem' }}>
                             Got It! (புரிந்தது)
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Privacy Policy & Govt Compliance Modal */}
+            {showPolicyModal && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+                    background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
+                    display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 999999, padding: '16px'
+                }} className="fade-in">
+                    <div style={{
+                        background: '#ffffff', borderRadius: '24px', padding: '24px 20px', maxWidth: '500px', width: '100%',
+                        maxHeight: '85vh', overflowY: 'auto', border: '3px solid #1e3c72', color: '#333'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #eee', paddingBottom: '10px' }}>
+                            <h3 style={{ margin: 0, color: '#1e3c72', fontSize: '1.2rem' }}>🛡️ Privacy Policy & Security</h3>
+                            <button onClick={() => setShowPolicyModal(false)} className="action-btn" style={{ background: '#ff416c', padding: '4px 10px', fontSize: '0.8rem' }}>❌ Close</button>
+                        </div>
+                        <div style={{ marginTop: '14px', fontSize: '0.88rem', lineHeight: '1.6' }}>
+                            <p style={{ background: '#f8f9fa', padding: '10px', borderRadius: '8px' }}>
+                                <strong>1. Encrypted Live GPS Tracking:</strong><br />
+                                Your live location is transmitted using encrypted TLS protocols only when active navigation is enabled or when SOS is triggered.
+                            </p>
+                            <p style={{ background: '#f8f9fa', padding: '10px', borderRadius: '8px' }}>
+                                <strong>2. Blockchain Verification Ledger:</strong><br />
+                                Govt Passes and identity verification hashes are securely anchored on the immutable Blockchain ledger.
+                            </p>
+                            <p style={{ background: '#f8f9fa', padding: '10px', borderRadius: '8px' }}>
+                                <strong>3. Emergency Dispatch Protocols:</strong><br />
+                                Emergency alerts dispatch E-FIR PDFs and live location links exclusively to authorized emergency police (100) and medical (108) response teams.
+                            </p>
+                        </div>
+                        <button onClick={() => setShowPolicyModal(false)} className="action-btn" style={{ width: '100%', marginTop: '16px', padding: '12px' }}>
+                            Understood & Accept
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* About App Modal */}
+            {showAboutModal && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+                    background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
+                    display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 999999, padding: '16px'
+                }} className="fade-in">
+                    <div style={{
+                        background: '#ffffff', borderRadius: '24px', padding: '24px 20px', maxWidth: '440px', width: '100%',
+                        textAlign: 'center', border: '3px solid #1e3c72', color: '#333'
+                    }}>
+                        <img src="/logo.png" alt="Logo" style={{ width: '70px', height: '70px', borderRadius: '16px', marginBottom: '10px' }} />
+                        <h3 style={{ margin: '0 0 4px 0', color: '#1e3c72', fontSize: '1.3rem' }}>Journey Guard v2.4</h3>
+                        <p style={{ margin: '0 0 12px 0', color: '#2e7d32', fontWeight: 'bold', fontSize: '0.85rem' }}>🌿 Smart Nature Tourist Safety System</p>
+                        <p style={{ fontSize: '0.88rem', color: '#555', lineHeight: '1.5' }}>
+                            Designed for high-risk forest, mountain, and waterfall tourist destinations with offline AI assistance, OSRM roadmap navigation, and 30-second emergency SOS.
+                        </p>
+                        <button onClick={() => setShowAboutModal(false)} className="action-btn" style={{ width: '100%', marginTop: '16px', padding: '12px' }}>
+                            Close
                         </button>
                     </div>
                 </div>
