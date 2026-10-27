@@ -61,6 +61,11 @@ const globalStyles = `
     animation: mascotIdleBreathing 3s ease-in-out infinite;
   }
 
+  @keyframes popoverGlowEnter {
+    0% { transform: scale(0.3) translateY(40px); opacity: 0; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
+  }
+
   /* Nature Leaf Particle Overlay */
   .leaf-particle {
     position: fixed;
@@ -2093,40 +2098,52 @@ function TouristDashboard({ user, logout }) {
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: navigator.onLine ? '#38ef7d' : '#ff416c' }}></span>
             </div>
 
-            {/* Thozhan Siri-Style Voice AI Assistant Side Drawer / Sheet */}
+            {/* Touch-Positioned Popover Voice AI Chat Balloon */}
             {showAiMascotModal && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-                    background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)',
-                    display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 999999, padding: '16px'
-                }} className="fade-in">
+                    background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)',
+                    zIndex: 999999
+                }} onClick={() => setShowAiMascotModal(false)}>
                     <div
+                        onClick={(e) => e.stopPropagation()}
                         style={{
-                            background: '#ffffff', borderRadius: '30px', padding: '24px 20px', maxWidth: '480px', width: '100%',
-                            maxHeight: '90vh', overflowY: 'auto', border: aiGender === 'female' ? '3.5px solid #ff0844' : '3.5px solid #ff6d00',
-                            color: '#333', boxShadow: '0 25px 70px rgba(0,0,0,0.6)', position: 'relative'
+                            position: 'fixed',
+                            bottom: '80px',
+                            right: '16px',
+                            width: '360px',
+                            maxWidth: '92vw',
+                            maxHeight: '80vh',
+                            overflowY: 'auto',
+                            background: '#ffffff',
+                            borderRadius: '24px',
+                            padding: '18px 16px',
+                            border: aiGender === 'female' ? '3px solid #ff0844' : '3px solid #ff6d00',
+                            color: '#333',
+                            boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                            animation: 'popoverGlowEnter 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards'
                         }}
                     >
                         {/* 3D Animated Cinematic Mascot Stage / Arena */}
                         <div style={{
-                            textAlign: 'center', padding: '15px 10px', background: aiGender === 'female' ? 'radial-gradient(circle, rgba(255,8,68,0.15) 0%, rgba(255,255,255,0) 70%)' : 'radial-gradient(circle, rgba(255,109,0,0.18) 0%, rgba(255,255,255,0) 70%)',
-                            borderRadius: '20px', marginBottom: '14px'
+                            textAlign: 'center', padding: '12px 8px', background: aiGender === 'female' ? 'radial-gradient(circle, rgba(255,8,68,0.15) 0%, rgba(255,255,255,0) 70%)' : 'radial-gradient(circle, rgba(255,109,0,0.18) 0%, rgba(255,255,255,0) 70%)',
+                            borderRadius: '16px', marginBottom: '10px'
                         }}>
                             <div className={aiGender === 'female' ? 'cinematic-phoenix-entry mascot-idle-anim' : 'cinematic-tiger-entry mascot-idle-anim'} style={{ display: 'inline-block' }}>
-                                <span style={{ fontSize: '4.5rem', display: 'block', margin: '0 auto' }}>
+                                <span style={{ fontSize: '3.6rem', display: 'block', margin: '0 auto' }}>
                                     {aiGender === 'female' ? '🦚' : '🐅'}
                                 </span>
                             </div>
-                            <h3 style={{ margin: '8px 0 2px 0', color: '#1e3c72', fontSize: '1.3rem', fontWeight: 'bold' }}>
+                            <h4 style={{ margin: '6px 0 2px 0', color: '#1e3c72', fontSize: '1.1rem', fontWeight: 'bold' }}>
                                 {aiGender === 'female' ? '🦚 காவிரி பினிக்ஸ் AI' : '🐅 வீரன் புலி AI'}
-                            </h3>
-                            <span style={{ color: navigator.onLine ? '#2e7d32' : '#d32f2f', fontWeight: 'bold', fontSize: '0.8rem', background: navigator.onLine ? '#e8f5e9' : '#ffebee', padding: '3px 10px', borderRadius: '12px' }}>
+                            </h4>
+                            <span style={{ color: navigator.onLine ? '#2e7d32' : '#d32f2f', fontWeight: 'bold', fontSize: '0.75rem', background: navigator.onLine ? '#e8f5e9' : '#ffebee', padding: '2px 8px', borderRadius: '10px' }}>
                                 {navigator.onLine ? '🟢 Online Cloud AI' : '📡 Offline Forest AI Active'}
                             </span>
                         </div>
 
                         {/* Gender / Mascot Personality Selector */}
-                        <div style={{ display: 'flex', gap: '8px', background: '#f5f7fa', padding: '6px', borderRadius: '20px', margin: '14px 0' }}>
+                        <div style={{ display: 'flex', gap: '6px', background: '#f5f7fa', padding: '4px', borderRadius: '16px', margin: '10px 0' }}>
                             <button
                                 type="button"
                                 onClick={() => {
@@ -2135,9 +2152,9 @@ function TouristDashboard({ user, logout }) {
                                     speakThozhanVoice('வணக்கம்! நான் வீரன் புலி. உங்களின் காட்டு வழிகாட்டி.', language, 'male');
                                 }}
                                 style={{
-                                    flex: 1, padding: '10px', borderRadius: '16px', border: 'none', fontWeight: 'bold', fontSize: '0.85rem', cursor: 'pointer',
+                                    flex: 1, padding: '8px', borderRadius: '12px', border: 'none', fontWeight: 'bold', fontSize: '0.78rem', cursor: 'pointer',
                                     background: aiGender === 'male' ? 'linear-gradient(135deg, #f12711 0%, #f5af19 100%)' : 'transparent',
-                                    color: aiGender === 'male' ? '#ffffff' : '#555', boxShadow: aiGender === 'male' ? '0 4px 15px rgba(241,39,17,0.4)' : 'none'
+                                    color: aiGender === 'male' ? '#ffffff' : '#555', boxShadow: aiGender === 'male' ? '0 4px 12px rgba(241,39,17,0.4)' : 'none'
                                 }}
                             >
                                 🐅 Male (வீரன் புலி)
@@ -2150,9 +2167,9 @@ function TouristDashboard({ user, logout }) {
                                     speakThozhanVoice('வணக்கம்! நான் காவிரி பினிக்ஸ். உங்களின் பயணப் பாதுகாப்பு வழிகாட்டி.', language, 'female');
                                 }}
                                 style={{
-                                    flex: 1, padding: '10px', borderRadius: '16px', border: 'none', fontWeight: 'bold', fontSize: '0.85rem', cursor: 'pointer',
+                                    flex: 1, padding: '8px', borderRadius: '12px', border: 'none', fontWeight: 'bold', fontSize: '0.78rem', cursor: 'pointer',
                                     background: aiGender === 'female' ? 'linear-gradient(135deg, #ff0844 0%, #ffb199 100%)' : 'transparent',
-                                    color: aiGender === 'female' ? '#ffffff' : '#555', boxShadow: aiGender === 'female' ? '0 4px 15px rgba(255,8,68,0.4)' : 'none'
+                                    color: aiGender === 'female' ? '#ffffff' : '#555', boxShadow: aiGender === 'female' ? '0 4px 12px rgba(255,8,68,0.4)' : 'none'
                                 }}
                             >
                                 🦚 Female (காவிரி பினிக்ஸ்)
@@ -2160,33 +2177,33 @@ function TouristDashboard({ user, logout }) {
                         </div>
 
                         {/* Quick Question Assistant Chips */}
-                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '14px' }}>
-                            <button onClick={() => { setChatMessage('Nearest hospital'); sendChatMessage(); }} className="action-btn" style={{ background: '#e3f2fd', color: '#1565c0', padding: '6px 12px', fontSize: '0.78rem', borderRadius: '15px' }}>
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                            <button onClick={() => { setChatMessage('Nearest hospital'); sendChatMessage(); }} className="action-btn" style={{ background: '#e3f2fd', color: '#1565c0', padding: '4px 8px', fontSize: '0.75rem', borderRadius: '12px' }}>
                                 🏥 Hospital
                             </button>
-                            <button onClick={() => { setChatMessage('Nearest police station'); sendChatMessage(); }} className="action-btn" style={{ background: '#e8eaf6', color: '#283593', padding: '6px 12px', fontSize: '0.78rem', borderRadius: '15px' }}>
-                                👮 Police Station
+                            <button onClick={() => { setChatMessage('Nearest police station'); sendChatMessage(); }} className="action-btn" style={{ background: '#e8eaf6', color: '#283593', padding: '4px 8px', fontSize: '0.75rem', borderRadius: '12px' }}>
+                                👮 Police
                             </button>
-                            <button onClick={() => { setChatMessage('Bus Stand'); sendChatMessage(); }} className="action-btn" style={{ background: '#e8f5e9', color: '#2e7d32', padding: '6px 12px', fontSize: '0.78rem', borderRadius: '15px' }}>
+                            <button onClick={() => { setChatMessage('Bus Stand'); sendChatMessage(); }} className="action-btn" style={{ background: '#e8f5e9', color: '#2e7d32', padding: '4px 8px', fontSize: '0.75rem', borderRadius: '12px' }}>
                                 🚌 Bus Stand
                             </button>
-                            <button onClick={() => { setChatMessage('Waterfalls safety'); sendChatMessage(); }} className="action-btn" style={{ background: '#fff3e0', color: '#e65100', padding: '6px 12px', fontSize: '0.78rem', borderRadius: '15px' }}>
+                            <button onClick={() => { setChatMessage('Waterfalls safety'); sendChatMessage(); }} className="action-btn" style={{ background: '#fff3e0', color: '#e65100', padding: '4px 8px', fontSize: '0.75rem', borderRadius: '12px' }}>
                                 🌊 Waterfalls
                             </button>
                         </div>
 
                         {/* Speech Response Box */}
-                        <div style={{ background: '#f8f9fa', padding: '16px', borderRadius: '16px', minHeight: '85px', marginBottom: '14px', fontSize: '0.95rem', color: '#1e3c72', borderLeft: '5px solid #1e3c72', lineHeight: '1.5' }}>
+                        <div style={{ background: '#f8f9fa', padding: '12px', borderRadius: '12px', minHeight: '75px', marginBottom: '10px', fontSize: '0.88rem', color: '#1e3c72', borderLeft: '4px solid #1e3c72', lineHeight: '1.4' }}>
                             {chatReply || (language === 'ta' ? 'வணக்கம்! நான் உங்க தோழன் AI. மருத்துவமனை, காவல் நிலையம், பேருந்து நிலையம் அல்லது ஆபத்தான பகுதிகளைப் பற்றிக் கேளுங்கள்.' : 'Hello! I am your Thozhan AI Assistant. Ask me about nearby hospitals, police stations, bus stands, or danger spots.')}
                         </div>
 
                         {/* Interactive Location Permission Prompt */}
                         {aiSuggestedPlace && (
-                            <div style={{ margin: '10px 0 14px 0', background: '#e3f2fd', padding: '14px', borderRadius: '14px', borderLeft: '5px solid #1e3c72' }}>
-                                <p style={{ margin: '0 0 10px 0', fontSize: '0.88rem', fontWeight: 'bold', color: '#1e3c72' }}>
+                            <div style={{ margin: '8px 0 10px 0', background: '#e3f2fd', padding: '10px', borderRadius: '10px', borderLeft: '4px solid #1e3c72' }}>
+                                <p style={{ margin: '0 0 6px 0', fontSize: '0.82rem', fontWeight: 'bold', color: '#1e3c72' }}>
                                     🧭 Thozhan Prompt: Shall I plot the roadmap to "{aiSuggestedPlace.name}" on your Google Satellite Map?
                                 </p>
-                                <div style={{ display: 'flex', gap: '10px' }}>
+                                <div style={{ display: 'flex', gap: '6px' }}>
                                     <button
                                         type="button"
                                         onClick={() => {
@@ -2200,7 +2217,7 @@ function TouristDashboard({ user, logout }) {
                                             setTouristTab('map');
                                         }}
                                         className="action-btn"
-                                        style={{ background: '#25D366', padding: '10px 16px', fontSize: '0.88rem', fontWeight: 'bold' }}
+                                        style={{ background: '#25D366', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 'bold' }}
                                     >
                                         ✅ Yes, Plot Roadmap
                                     </button>
@@ -2208,7 +2225,7 @@ function TouristDashboard({ user, logout }) {
                                         type="button"
                                         onClick={() => setAiSuggestedPlace(null)}
                                         className="action-btn"
-                                        style={{ background: '#ff416c', padding: '10px 16px', fontSize: '0.88rem' }}
+                                        style={{ background: '#ff416c', padding: '6px 12px', fontSize: '0.8rem' }}
                                     >
                                         ❌ Cancel
                                     </button>
@@ -2217,24 +2234,20 @@ function TouristDashboard({ user, logout }) {
                         )}
 
                         {/* Chat Input Bar */}
-                        <div style={{ display: 'flex', gap: '8px' }}>
+                        <div style={{ display: 'flex', gap: '6px' }}>
                             <input
                                 className="modern-input"
-                                style={{ margin: 0, padding: '12px' }}
+                                style={{ margin: 0, padding: '10px', fontSize: '0.85rem' }}
                                 type="text"
                                 value={chatMessage}
                                 onChange={(e) => setChatMessage(e.target.value)}
                                 onKeyDown={(e) => { if (e.key === 'Enter') sendChatMessage(); }}
                                 placeholder="Ask Thozhan AI (e.g. Nearest hospital)..."
                             />
-                            <button onClick={sendChatMessage} className="action-btn" style={{ background: '#1e3c72', whiteSpace: 'nowrap', padding: '12px 18px' }}>
-                                🎙️ Speak / Ask
+                            <button onClick={sendChatMessage} className="action-btn" style={{ background: '#1e3c72', whiteSpace: 'nowrap', padding: '10px 14px', fontSize: '0.85rem' }}>
+                                🎙️ Ask
                             </button>
                         </div>
-
-                        <button onClick={() => setShowAiMascotModal(false)} className="action-btn" style={{ width: '100%', marginTop: '14px', background: '#78909c', padding: '10px' }}>
-                            Close AI Assistant
-                        </button>
                     </div>
                 </div>
             )}
