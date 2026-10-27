@@ -919,6 +919,11 @@ function TouristDashboard({ user, logout }) {
         }
     };
 
+    // Auto-scroll to top on Tab change so user immediately sees tab content
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, [touristTab]);
+
     // Fetch Real-time Live Weather automatically based on Tourist GPS Location
     useEffect(() => {
         if (!currentLocation) return;
@@ -1416,61 +1421,6 @@ function TouristDashboard({ user, logout }) {
                     <button onClick={logout} className="action-btn" style={{ background: '#ff416c', padding: '6px 12px' }}>Logout</button>
                 </div>
             </nav>
-
-            {/* Tourist Tab Navigation Switcher (Top Pills) */}
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '15px', padding: '0 12px', flexWrap: 'wrap' }}>
-                <button
-                    type="button"
-                    onClick={() => setTouristTab('map')}
-                    className="action-btn"
-                    style={{
-                        background: touristTab === 'map' ? '#1e3c72' : '#ffffff',
-                        color: touristTab === 'map' ? '#ffffff' : '#1e3c72',
-                        padding: '8px 18px',
-                        borderRadius: '25px',
-                        fontSize: '0.85rem',
-                        fontWeight: 'bold',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                        border: '1.5px solid #1e3c72'
-                    }}
-                >
-                    🗺️ Safety Map
-                </button>
-                <button
-                    type="button"
-                    onClick={() => setTouristTab('account')}
-                    className="action-btn"
-                    style={{
-                        background: touristTab === 'account' ? '#1e3c72' : '#ffffff',
-                        color: touristTab === 'account' ? '#ffffff' : '#1e3c72',
-                        padding: '8px 18px',
-                        borderRadius: '25px',
-                        fontSize: '0.85rem',
-                        fontWeight: 'bold',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                        border: '1.5px solid #1e3c72'
-                    }}
-                >
-                    👤 Profile & ID
-                </button>
-                <button
-                    type="button"
-                    onClick={() => setTouristTab('settings')}
-                    className="action-btn"
-                    style={{
-                        background: touristTab === 'settings' ? '#1e3c72' : '#ffffff',
-                        color: touristTab === 'settings' ? '#ffffff' : '#1e3c72',
-                        padding: '8px 18px',
-                        borderRadius: '25px',
-                        fontSize: '0.85rem',
-                        fontWeight: 'bold',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                        border: '1.5px solid #1e3c72'
-                    }}
-                >
-                    ⚙️ Settings & Manual
-                </button>
-            </div>
 
             {/* TAB 1: Profile & ID Page */}
             {touristTab === 'account' ? (
